@@ -1,9 +1,9 @@
 datasources:
   default:
-    url: jdbc:postgresql://localhost:6543/moneymap
+    url: ${DATABASE_URL:`jdbc:postgresql://localhost:6543/moneymap`}
     driverClassName: org.postgresql.Driver
-    username: moneymap
-    password: moneymap
+    username: ${DATABASE_USERNAME:moneymap}
+    password: ${DATABASE_PASSWORD:moneymap}
     dialect: POSTGRES
 
 jpa:
