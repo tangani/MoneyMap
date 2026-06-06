@@ -55,7 +55,7 @@ Using Yarn:
 
 ```bash
 yarn dev
-```
+``` 
 
 Using pnpm:
 
