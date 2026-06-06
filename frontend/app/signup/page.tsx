@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function SignupPage() {
+    const [name, setName] = useState("");
+    const [surname, setSurname] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -14,6 +17,28 @@ export default function SignupPage() {
 
     const passwordsDoNotMatch =
         confirmPassword.length > 0 && password !== confirmPassword;
+
+    const formIsValid =
+        name.trim().length > 0 &&
+        surname.trim().length > 0 &&
+        email.trim().length > 0 &&
+        passwordsMatch;
+
+    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+
+        if (!formIsValid) return;
+
+        const newUser = {
+            name,
+            surname,
+            email,
+        };
+
+        localStorage.setItem("moneymap_user", JSON.stringify(newUser));
+
+        console.log("User saved:", newUser);
+    }
 
     return (
         <main className="flex min-h-screen items-center justify-center bg-emerald-50 px-6 py-12">
@@ -26,8 +51,7 @@ export default function SignupPage() {
                     Start mapping your money with MoneyMap.
                 </p>
 
-                <form className="mt-8 space-y-5">
-                    {/*Name */}
+                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                     <div>
                         <label className="text-sm font-medium text-gray-700">
                             Full name
@@ -36,12 +60,12 @@ export default function SignupPage() {
                         <input
                             type="text"
                             placeholder="John"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
                             className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                         />
                     </div>
 
-
-                    {/*Surname */}
                     <div>
                         <label className="text-sm font-medium text-gray-700">
                             Surname
@@ -50,11 +74,12 @@ export default function SignupPage() {
                         <input
                             type="text"
                             placeholder="Doe"
+                            value={surname}
+                            onChange={(e) => setSurname(e.target.value)}
                             className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                         />
                     </div>
 
-                    {/* Email */}
                     <div>
                         <label className="text-sm font-medium text-gray-700">
                             Email
@@ -63,11 +88,12 @@ export default function SignupPage() {
                         <input
                             type="email"
                             placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                         />
                     </div>
 
-                    {/* Password */}
                     <div>
                         <label className="text-sm font-medium text-gray-700">
                             Password
@@ -82,7 +108,6 @@ export default function SignupPage() {
                         />
                     </div>
 
-                    {/* Confirm Password */}
                     <div>
                         <label className="text-sm font-medium text-gray-700">
                             Confirm Password
@@ -93,8 +118,7 @@ export default function SignupPage() {
                             placeholder="Re-enter your password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className={`mt-2 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:ring-2
-              ${
+                            className={`mt-2 w-full rounded-xl border px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:ring-2 ${
                                 passwordsDoNotMatch
                                     ? "border-red-400 focus:border-red-500 focus:ring-red-100"
                                     : "border-gray-300 focus:border-emerald-600 focus:ring-emerald-200"
@@ -114,13 +138,11 @@ export default function SignupPage() {
                         )}
                     </div>
 
-                    {/* Submit */}
                     <button
                         type="submit"
-                        disabled={!passwordsMatch}
-                        className={`w-full rounded-xl px-6 py-3 font-semibold text-white transition
-            ${
-                            passwordsMatch
+                        disabled={!formIsValid}
+                        className={`w-full rounded-xl px-6 py-3 font-semibold text-white transition ${
+                            formIsValid
                                 ? "bg-emerald-600 hover:bg-emerald-700"
                                 : "cursor-not-allowed bg-gray-400"
                         }`}
@@ -131,10 +153,7 @@ export default function SignupPage() {
 
                 <p className="mt-6 text-center text-sm text-gray-600">
                     Already have an account?{" "}
-                    <Link
-                        href="/login"
-                        className="font-semibold text-emerald-700"
-                    >
+                    <Link href="/login" className="font-semibold text-emerald-700">
                         Log in
                     </Link>
                 </p>
