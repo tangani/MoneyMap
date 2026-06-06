@@ -8,6 +8,8 @@ import com.moneymap.repositories.UserRepository
 import jakarta.inject.Singleton
 import java.time.Instant
 import java.util.UUID
+import io.micronaut.http.HttpStatus
+import io.micronaut.http.exceptions.HttpStatusException
 import org.mindrot.jbcrypt.BCrypt
 
 @Singleton
@@ -19,7 +21,10 @@ class AuthService(
         val existingUser = userRepository.findByEmail(request.email)
 
         if (existingUser != null) {
-            throw IllegalArgumentException("User with email already exists")
+            throw HttpStatusException(
+                HttpStatus.CONFLICT,
+                "User with email already exists"
+            )
         }
 
         val user = User(
@@ -47,13 +52,19 @@ class AuthService(
 
     fun login(request: LoginRequest): AuthResponse {
         val user = userRepository.findByEmail(request.email)
-            ?: throw IllegalArgumentException("Invalid email or password")
+            ?: throw HttpStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Invalid email or password"
+            )
 
         if (!BCrypt.checkpw(
                 request.password,
                 user.passwordHash
             )) {
-            throw IllegalArgumentException("Invalid email or password")
+            throw HttpStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Invalid email or password"
+            )
         }
 
         return AuthResponse(
