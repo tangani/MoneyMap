@@ -160,7 +160,7 @@ Verify installation:
 
 ```bash
 java --version
-docker --version
+docker --version 
 docker compose version
 ```
 
