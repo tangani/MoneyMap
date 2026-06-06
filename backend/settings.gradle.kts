@@ -4,5 +4,5 @@
 
 
 
-rootProject.name="demo"
+rootProject.name="MoneyMap"
 
