@@ -1,0 +1,19 @@
+datasources:
+  default:
+    url: jdbc:postgresql://localhost:6543/moneymap
+    driverClassName: org.postgresql.Driver
+    username: moneymap
+    password: moneymap
+    dialect: POSTGRES
+
+jpa:
+  default:
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: update
+
+flyway:
+  datasources:
+    default:
+      enabled: true

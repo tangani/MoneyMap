@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: moneymap-postgres
+    ports:
+      - "6543:5432"
+    environment:
+      POSTGRES_DB: moneymap
+      POSTGRES_USER: moneymap
+      POSTGRES_PASSWORD: moneymap
+    volumes:
+      - moneymap-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  moneymap-postgres-data:

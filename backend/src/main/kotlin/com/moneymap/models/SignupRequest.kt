@@ -15,5 +15,5 @@ data class SignupRequest(
     val email: String,
 
     @field:JsonProperty("password")
-    val passwordHash: String
+    val password: String
 )

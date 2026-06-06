@@ -4,14 +4,15 @@ import com.moneymap.domain.user.User
 import com.moneymap.models.AuthResponse
 import com.moneymap.models.LoginRequest
 import com.moneymap.models.SignupRequest
-import com.moneymap.repositories.InMemoryUserRepository
+import com.moneymap.repositories.UserRepository
 import jakarta.inject.Singleton
 import java.time.Instant
 import java.util.UUID
+import org.mindrot.jbcrypt.BCrypt
 
 @Singleton
 class AuthService(
-    private val userRepository: InMemoryUserRepository
+    private val userRepository: UserRepository
 ) {
 
     fun signup(request: SignupRequest): AuthResponse {
@@ -26,7 +27,10 @@ class AuthService(
             firstName = request.firstName,
             lastName = request.lastName,
             email = request.email,
-            passwordHash = request.passwordHash, // temporary: hash this later
+            passwordHash = BCrypt.hashpw(
+                request.password,
+                BCrypt.gensalt()
+            ),
             createdAt = Instant.now()
         )
 
@@ -45,7 +49,10 @@ class AuthService(
         val user = userRepository.findByEmail(request.email)
             ?: throw IllegalArgumentException("Invalid email or password")
 
-        if (user.passwordHash != request.password) {
+        if (!BCrypt.checkpw(
+                request.password,
+                user.passwordHash
+            )) {
             throw IllegalArgumentException("Invalid email or password")
         }
 
