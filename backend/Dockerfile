@@ -22,7 +22,7 @@ COPY --from=build /app/build/libs/*-all.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dmicronaut.server.port=${PORT:-8080}", "-jar", "app.jar"]
 
 
 #    To build the Docker image, run the following command in the terminal from the directory containing this Dockerfile:
