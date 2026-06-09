@@ -75,15 +75,20 @@ export default function BudgetPage() {
         const savedItems = localStorage.getItem(BUDGET_ITEMS_STORAGE_KEY);
 
         if (savedItems) {
-            const parsed = JSON.parse(savedItems);
+            const parsed: unknown = JSON.parse(savedItems);
 
-            const isValid = parsed.every(
-                (item) =>
-                    typeof item.amountInCents === "number"
-            );
+            if (Array.isArray(parsed)) {
+                const isValid = parsed.every(
+                    (item: unknown) =>
+                        typeof item === "object" &&
+                        item !== null &&
+                        "amountInCents" in item &&
+                        typeof item.amountInCents === "number"
+                );
 
-            if (isValid) {
-                return parsed;
+                if (isValid) {
+                    return parsed as BudgetItem[];
+                }
             }
         }
 

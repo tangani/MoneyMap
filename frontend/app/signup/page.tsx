@@ -9,6 +9,9 @@ export default function SignupPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
 
     const passwordsMatch =
         password.length > 0 &&
@@ -24,20 +27,46 @@ export default function SignupPage() {
         email.trim().length > 0 &&
         passwordsMatch;
 
-    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
         if (!formIsValid) return;
 
-        const newUser = {
-            name,
-            surname,
-            email,
-        };
+        setErrorMessage("");
+        setSuccessMessage("");
+        setIsLoading(true);
 
-        localStorage.setItem("moneymap_user", JSON.stringify(newUser));
+        try {
+            const signupRequest = {
+                firstName: name.trim(),
+                lastName: surname.trim(),
+                email: email.trim(),
+                password,
+            };
 
-        console.log("User saved:", newUser);
+            const response = await fetch(
+                "https://moneymap-backend-l90f.onrender.com/api/v1/auth/signup",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(signupRequest),
+                }
+            );
+
+            if (!response.ok) {
+                setErrorMessage("Signup failed. Please try again.");
+                return;
+            }
+
+            setSuccessMessage("Account created successfully. You can now log in.");
+        } catch (error) {
+            console.error("Network error:", error);
+            setErrorMessage("Could not connect to the server. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -140,15 +169,22 @@ export default function SignupPage() {
 
                     <button
                         type="submit"
-                        disabled={!formIsValid}
+                        disabled={!formIsValid || isLoading}
                         className={`w-full rounded-xl px-6 py-3 font-semibold text-white transition ${
-                            formIsValid
+                            formIsValid && !isLoading
                                 ? "bg-emerald-600 hover:bg-emerald-700"
                                 : "cursor-not-allowed bg-gray-400"
                         }`}
                     >
-                        Create Account
+                        {isLoading ? "Creating account..." : "Create Account"}
                     </button>
+                    {errorMessage && (
+                        <p className="text-sm text-red-500">{errorMessage}</p>
+                    )}
+
+                    {successMessage && (
+                        <p className="text-sm text-emerald-600">{successMessage}</p>
+                    )}
                 </form>
 
                 <p className="mt-6 text-center text-sm text-gray-600">

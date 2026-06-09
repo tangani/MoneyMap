@@ -2,22 +2,61 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    const formIsValid = email.trim().length > 0 && password.trim().length > 0;
+    const router = useRouter();
 
     async function handleSubmit(
         e: React.FormEvent<HTMLFormElement>
     ) {
         e.preventDefault();
 
-        console.log({
-            email,
-            password,
-        });
+        if (!formIsValid) return;
 
-        // Backend call goes here
+        setErrorMessage("");
+        setIsLoading(true);
+
+        try {
+            const loginRequest = {
+                email: email.trim(),
+                password,
+            };
+
+            const response = await fetch(
+                "https://moneymap-backend-l90f.onrender.com/api/v1/auth/login",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(loginRequest),
+                }
+            );
+
+            if (!response.ok) {
+                setErrorMessage("Invalid email or password.");
+                return;
+            }
+
+            const loginResponse = await response.json();
+            console.log("Login successful:", loginResponse);
+
+            router.push("/budget");
+
+        } catch (error) {
+            console.error("Network error:", error);
+            setErrorMessage(
+                "Could not connect to the server. Please try again."
+            );
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -69,10 +108,20 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700"
+                        disabled={!formIsValid || isLoading}
+                        className={`w-full rounded-xl px-6 py-3 font-semibold text-white transition ${
+                            formIsValid && !isLoading
+                                ? "bg-emerald-600 hover:bg-emerald-700"
+                                : "cursor-not-allowed bg-gray-400"
+                        }`}
                     >
-                        Log In
+                        {isLoading ? "Logging in..." : "Log In"}
                     </button>
+                    {errorMessage && (
+                        <p className="text-sm text-red-500">
+                            {errorMessage}
+                        </p>
+                    )}
                 </form>
 
                 <p className="mt-6 text-center text-sm text-gray-600">
