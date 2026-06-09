@@ -6,5 +6,5 @@ import io.micronaut.serde.annotation.Serdeable
 data class BudgetResponse(
     val monthlyIncomeInCents: Long,
     val items: List<BudgetItemResponse>,
-    val goal: BudgetGoalResponse
+    val goal: BudgetGoalResponse?
 )

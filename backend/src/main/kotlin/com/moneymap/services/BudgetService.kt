@@ -1,10 +1,15 @@
 package com.moneymap.services
 
+import com.moneymap.domain.budget.Budget
+import com.moneymap.domain.budget.BudgetGoal
+import com.moneymap.domain.budget.BudgetItem
 import com.moneymap.models.*
 import com.moneymap.repositories.BudgetGoalRepository
 import com.moneymap.repositories.BudgetItemRepository
 import com.moneymap.repositories.BudgetRepository
 import jakarta.inject.Singleton
+import java.time.LocalDateTime
+import java.util.UUID
 
 @Singleton
 class BudgetService(
@@ -13,46 +18,107 @@ class BudgetService(
     private val budgetGoalRepository: BudgetGoalRepository,
 ) {
 
+    private val temporaryUserId = UUID.fromString("b3cc51aa-d019-4cff-a806-06c279515d32")
+
+    private fun toCents(amount: java.math.BigDecimal): Long {
+        return amount.multiply(java.math.BigDecimal("100")).toLong()
+    }
+
     fun getBudget(): BudgetResponse {
+        val budget = budgetRepository.findByUserId(temporaryUserId)
+            ?: return BudgetResponse(
+                monthlyIncomeInCents = 0,
+                items = emptyList(),
+                goal = null
+            )
+
+        val items = budgetItemRepository.findByBudgetId(budget.id)
+        val goal = budgetGoalRepository.findByBudgetId(budget.id)
+
         return BudgetResponse(
-            monthlyIncomeInCents = 5_000_000,
-            items = listOf(
+            monthlyIncomeInCents = toCents(budget.monthlyIncome),
+            items = items.map { item ->
                 BudgetItemResponse(
-                    id = "rent",
-                    name = "Rent",
-                    amountInCents = 750_000,
-                    category = "Bills",
-                    type = "EXPENSE"
-                ),
-                BudgetItemResponse(
-                    id = "groceries",
-                    name = "Groceries",
-                    amountInCents = 300_000,
-                    category = "Essentials",
-                    type = "EXPENSE"
-                ),
-                BudgetItemResponse(
-                    id = "transport",
-                    name = "Transport",
-                    amountInCents = 150_000,
-                    category = "Essentials",
-                    type = "EXPENSE"
-                ),
-                BudgetItemResponse(
-                    id = "savings",
-                    name = "Savings",
-                    amountInCents = 200_000,
-                    category = "Goals",
-                    type = "SAVING"
+                    id = item.id.toString(),
+                    name = item.name,
+                    amountInCents = toCents(item.amount),
+                    category = item.category,
+                    type = if (item.category == "Goals") "SAVING" else "EXPENSE"
                 )
-            ),
-            goal = BudgetGoalResponse(
-                id = "monthly-savings-goal",
-                name = "Increase monthly savings",
-                targetAmountInCents = 500_000,
-                currentAmountInCents = 200_000,
-                monthlyContributionInCents = 200_000
+            },
+            goal = goal?.let {
+                BudgetGoalResponse(
+                    id = it.id.toString(),
+                    name = it.name,
+                    targetAmountInCents = toCents(it.targetAmount),
+                    currentAmountInCents = toCents(it.monthlyContribution),
+                    monthlyContributionInCents = toCents(it.monthlyContribution)
+                )
+            }
+        )
+    }
+
+    fun createBudget(request: CreateBudgetRequest): BudgetResponse {
+        val existingBudget = budgetRepository.findByUserId(temporaryUserId)
+
+        if (existingBudget != null) {
+            return getBudget()
+        }
+
+        val now = LocalDateTime.now()
+
+        budgetRepository.save(
+            Budget(
+                id = UUID.randomUUID(),
+                userId = temporaryUserId,
+                monthlyIncome = request.monthlyIncome,
+                createdAt = now,
+                updatedAt = now,
             )
         )
+
+        return getBudget()
+    }
+
+    fun addBudgetItem(request: CreateBudgetItemRequest): BudgetResponse {
+        val budget = budgetRepository.findByUserId(temporaryUserId)
+            ?: throw IllegalStateException("Budget must be created before adding items")
+
+        val now = LocalDateTime.now()
+
+        budgetItemRepository.save(
+            BudgetItem(
+                id = UUID.randomUUID(),
+                budgetId = budget.id,
+                name = request.name,
+                category = request.category,
+                amount = request.amount,
+                createdAt = now,
+                updatedAt = now,
+            )
+        )
+
+        return getBudget()
+    }
+
+    fun setBudgetGoal(request: CreateBudgetGoalRequest): BudgetResponse {
+        val budget = budgetRepository.findByUserId(temporaryUserId)
+            ?: throw IllegalStateException("Budget must be created before setting a goal")
+
+        val now = LocalDateTime.now()
+
+        budgetGoalRepository.save(
+            BudgetGoal(
+                id = UUID.randomUUID(),
+                budgetId = budget.id,
+                name = request.name,
+                targetAmount = request.targetAmount,
+                monthlyContribution = request.monthlyContribution,
+                createdAt = now,
+                updatedAt = now,
+            )
+        )
+
+        return getBudget()
     }
 }
