@@ -7,7 +7,6 @@ import java.util.UUID
 @Serdeable
 data class CreateBudgetGoalRequest(
     val userId: UUID,
-    val budgetId: UUID,
     val name: String,
     val targetAmount: BigDecimal,
     val monthlyContribution: BigDecimal,
