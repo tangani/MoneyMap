@@ -1,10 +1,17 @@
 package com.moneymap.services
 
 import com.moneymap.models.*
+import com.moneymap.repositories.BudgetGoalRepository
+import com.moneymap.repositories.BudgetItemRepository
+import com.moneymap.repositories.BudgetRepository
 import jakarta.inject.Singleton
 
 @Singleton
-class BudgetService {
+class BudgetService(
+    private val budgetRepository: BudgetRepository,
+    private val budgetItemRepository: BudgetItemRepository,
+    private val budgetGoalRepository: BudgetGoalRepository,
+) {
 
     fun getBudget(): BudgetResponse {
         return BudgetResponse(
