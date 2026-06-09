@@ -18,8 +18,6 @@ class BudgetService(
     private val budgetGoalRepository: BudgetGoalRepository,
 ) {
 
-    private val temporaryUserId = UUID.fromString("b3cc51aa-d019-4cff-a806-06c279515d32")
-
     private fun toCents(amount: java.math.BigDecimal): Long {
         return amount.multiply(java.math.BigDecimal("100")).toLong()
     }
@@ -81,7 +79,7 @@ class BudgetService(
     }
 
     fun addBudgetItem(request: CreateBudgetItemRequest): BudgetResponse {
-        val budget = budgetRepository.findByUserId(temporaryUserId)
+        val budget = budgetRepository.findByUserId(request.userId)
             ?: throw IllegalStateException("Budget must be created before adding items")
 
         val now = LocalDateTime.now()
@@ -102,7 +100,7 @@ class BudgetService(
     }
 
     fun setBudgetGoal(request: CreateBudgetGoalRequest): BudgetResponse {
-        val budget = budgetRepository.findByUserId(temporaryUserId)
+        val budget = budgetRepository.findByUserId(request.userId)
             ?: throw IllegalStateException("Budget must be created before setting a goal")
 
         val now = LocalDateTime.now()
