@@ -21,101 +21,57 @@ type BudgetGoal = {
     monthlyContributionInCents: number;
 };
 
-const BUDGET_ITEMS_STORAGE_KEY = "moneymap:budget-items";
-const BUDGET_GOAL_STORAGE_KEY = "moneymap:budget-goal";
-
-const MONTHLY_INCOME_IN_CENTS = 5000000;
-
-const initialBudgetItems: BudgetItem[] = [
-    {
-        id: "rent",
-        name: "Rent",
-        amountInCents: 750000,
-        category: "Bills",
-        type: "EXPENSE",
-    },
-    {
-        id: "groceries",
-        name: "Groceries",
-        amountInCents: 300000,
-        category: "Essentials",
-        type: "EXPENSE",
-    },
-    {
-        id: "transport",
-        name: "Transport",
-        amountInCents: 150000,
-        category: "Essentials",
-        type: "EXPENSE",
-    },
-    {
-        id: "savings",
-        name: "Savings",
-        amountInCents: 200000,
-        category: "Goals",
-        type: "SAVING",
-    },
-];
-
-const initialGoal: BudgetGoal = {
-    id: "monthly-savings-goal",
-    name: "Increase monthly savings",
-    targetAmountInCents: 500000,
-    currentAmountInCents: 200000,
-    monthlyContributionInCents: 200000,
+type BudgetResponse = {
+    monthlyIncomeInCents: number;
+    items: BudgetItem[];
+    goal: BudgetGoal;
 };
 
 export default function BudgetPage() {
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
-    const [budgetItems, setBudgetItems] = useState<BudgetItem[]>(() => {
-        if (typeof window === "undefined") return initialBudgetItems;
+    const [monthlyIncomeInCents, setMonthlyIncomeInCents] = useState(0);
+    const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+    const [goal, setGoal] = useState<BudgetGoal | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
 
-        const savedItems = localStorage.getItem(BUDGET_ITEMS_STORAGE_KEY);
-
-        if (savedItems) {
-            const parsed: unknown = JSON.parse(savedItems);
-
-            if (Array.isArray(parsed)) {
-                const isValid = parsed.every(
-                    (item: unknown) =>
-                        typeof item === "object" &&
-                        item !== null &&
-                        "amountInCents" in item &&
-                        typeof item.amountInCents === "number"
+    useEffect(() => {
+        async function loadBudget() {
+            try {
+                const response = await fetch(
+                    `https://moneymap-backend-l90f.onrender.com/api/v1/budget`
                 );
 
-                if (isValid) {
-                    return parsed as BudgetItem[];
+                if (!response.ok) {
+                    setErrorMessage("Could not load budget.");
+                    return;
                 }
+
+                const budget: BudgetResponse = await response.json();
+
+                setMonthlyIncomeInCents(budget.monthlyIncomeInCents);
+                setBudgetItems(budget.items);
+                setGoal(budget.goal);
+            } catch (error) {
+                console.error("Budget loading failed:", error);
+                setErrorMessage("Could not connect to the server.");
+            } finally {
+                setIsLoading(false);
             }
         }
 
-        return initialBudgetItems;
-    });
-
-    const [goal, setGoal] = useState<BudgetGoal>(() => {
-        if (typeof window === "undefined") return initialGoal;
-
-        const savedGoal = localStorage.getItem(BUDGET_GOAL_STORAGE_KEY);
-
-        if (!savedGoal) return initialGoal;
-
-        try {
-            return JSON.parse(savedGoal);
-        } catch {
-            return initialGoal;
-        }
-    });
+        loadBudget();
+    }, []);
 
     const plannedExpensesInCents = useMemo(() => {
         return budgetItems
             .filter((item) => item.type === "EXPENSE" || item.type === "SAVING")
-            .reduce((total, item) => total + item.amountInCents, 20000);
+            .reduce((total, item) => total + item.amountInCents, 0);
     }, [budgetItems]);
 
-    const remainingInCents = MONTHLY_INCOME_IN_CENTS - plannedExpensesInCents;
+    const remainingInCents = monthlyIncomeInCents - plannedExpensesInCents;
 
     function handleAddItem(item: BudgetItem) {
         setBudgetItems((currentItems) => [...currentItems, item]);
@@ -127,16 +83,23 @@ export default function BudgetPage() {
         setIsGoalModalOpen(false);
     }
 
-    useEffect(() => {
-        localStorage.setItem(
-            BUDGET_ITEMS_STORAGE_KEY,
-            JSON.stringify(budgetItems)
+    if (isLoading) {
+        return (
+            <AppShell>
+                <p>Loading budget...</p>
+            </AppShell>
         );
-    }, [budgetItems]);
+    }
 
-    useEffect(() => {
-        localStorage.setItem(BUDGET_GOAL_STORAGE_KEY, JSON.stringify(goal));
-    }, [goal]);
+    if (errorMessage || !goal) {
+        return (
+            <AppShell>
+                <p className="text-red-500">
+                    {errorMessage || "Budget unavailable."}
+                </p>
+            </AppShell>
+        );
+    }
 
     return (
         <AppShell>
@@ -144,7 +107,7 @@ export default function BudgetPage() {
                 <PageHeader />
 
                 <SummaryCards
-                    monthlyIncomeInCents={MONTHLY_INCOME_IN_CENTS}
+                    monthlyIncomeInCents={monthlyIncomeInCents}
                     plannedExpensesInCents={plannedExpensesInCents}
                     remainingInCents={remainingInCents}
                 />
@@ -247,9 +210,7 @@ function BudgetGoalCard({
 }) {
     const progressPercentage = Math.min(
         100,
-        Math.round(
-            (goal.currentAmountInCents / goal.targetAmountInCents) * 100
-        )
+        Math.round((goal.currentAmountInCents / goal.targetAmountInCents) * 100)
     );
 
     return (
