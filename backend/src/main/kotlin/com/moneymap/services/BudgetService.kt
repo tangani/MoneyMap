@@ -24,8 +24,8 @@ class BudgetService(
         return amount.multiply(java.math.BigDecimal("100")).toLong()
     }
 
-    fun getBudget(): BudgetResponse {
-        val budget = budgetRepository.findByUserId(temporaryUserId)
+    fun getBudget(userId: UUID): BudgetResponse {
+        val budget = budgetRepository.findByUserId(userId)
             ?: return BudgetResponse(
                 monthlyIncomeInCents = 0,
                 items = emptyList(),
@@ -59,10 +59,10 @@ class BudgetService(
     }
 
     fun createBudget(request: CreateBudgetRequest): BudgetResponse {
-        val existingBudget = budgetRepository.findByUserId(temporaryUserId)
+        val existingBudget = budgetRepository.findByUserId(request.userId)
 
         if (existingBudget != null) {
-            return getBudget()
+            return getBudget(request.userId)
         }
 
         val now = LocalDateTime.now()
@@ -70,14 +70,14 @@ class BudgetService(
         budgetRepository.save(
             Budget(
                 id = UUID.randomUUID(),
-                userId = temporaryUserId,
+                userId = request.userId,
                 monthlyIncome = request.monthlyIncome,
                 createdAt = now,
                 updatedAt = now,
             )
         )
 
-        return getBudget()
+        return getBudget(request.userId)
     }
 
     fun addBudgetItem(request: CreateBudgetItemRequest): BudgetResponse {
@@ -98,7 +98,7 @@ class BudgetService(
             )
         )
 
-        return getBudget()
+        return getBudget(request.userId)
     }
 
     fun setBudgetGoal(request: CreateBudgetGoalRequest): BudgetResponse {
@@ -119,6 +119,6 @@ class BudgetService(
             )
         )
 
-        return getBudget()
+        return getBudget(request.userId)
     }
 }

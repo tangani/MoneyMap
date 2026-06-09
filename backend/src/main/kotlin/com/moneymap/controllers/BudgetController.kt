@@ -9,14 +9,15 @@ import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
+import java.util.UUID
 
 @Controller("/api/v1/budget")
 class BudgetController(
     private val budgetService: BudgetService,
 ) {
-    @Get
-    fun getBudget(): BudgetResponse {
-        return budgetService.getBudget()
+    @Get("/{userId}")
+    fun getBudget(userId: UUID): BudgetResponse {
+        return budgetService.getBudget(userId)
     }
 
     @Post
