@@ -1,100 +1,204 @@
 # MoneyMap Backend
 
-MoneyMap is a personal finance and budgeting platform designed to help users take control of their finances through budgeting, recurring expense tracking, savings goals, debt management, and spending insights.
+The MoneyMap Backend powers the MoneyMap personal finance platform.
 
-This repository contains the backend services powering the MoneyMap platform.
+It provides the APIs, business logic, data persistence, and integrations required to help users manage budgets, track expenses, achieve savings goals, and gain insights into their financial health.
+
+The long-term vision is to build a scalable fintech-style platform supporting web, Android, and iOS applications.
 
 ---
 
-## Tech Stack
+# Vision
 
-### Core Framework
+MoneyMap exists to help people understand, control, and improve their financial lives.
 
-* Kotlin
+The backend is responsible for:
+
+* User authentication and authorization
+* Budget management
+* Goal tracking
+* Recurring expense management
+* Financial reporting
+* Future banking integrations
+* Future AI-powered financial insights
+
+---
+
+# Current Features
+
+## Authentication
+
+Implemented:
+
+* User Registration
+* User Login
+* Request validation
+* API response handling
+
+Endpoints:
+
+```http
+POST /api/v1/auth/signup
+POST /api/v1/auth/login
+```
+
+Upcoming:
+
+* Password hashing (BCrypt)
+* JWT authentication
+* Refresh tokens
+* Password reset
+
+---
+
+## Budget Management
+
+Currently in development.
+
+Planned capabilities:
+
+* Create budgets
+* Update budgets
+* Delete budgets
+* Monthly budget summaries
+* Budget category tracking
+
+---
+
+## Financial Goals
+
+Currently in development.
+
+Planned capabilities:
+
+* Create savings goals
+* Track progress
+* Monthly contribution tracking
+* Goal completion analytics
+
+---
+
+## Recurring Expenses
+
+Currently in development.
+
+Examples:
+
+* Rent
+* Insurance
+* Streaming services
+* Gym memberships
+* Internet services
+
+---
+
+# Technology Stack
+
+## Core Framework
+
+* Kotlin 2.3
 * Java 21
-* Micronaut 4.10.14
-* Gradle 9.x
+* Micronaut 4.10
+* Gradle 9
 
-### Database
+## Database
 
 * PostgreSQL
 
-### API
+## Serialization
 
-* RESTful APIs
-* JSON Serialization (Jackson)
+* Micronaut Serialization
+* JSON APIs
 
-### Development Tools
+## Development Tools
 
 * Docker
 * Docker Compose
-* GitHub Actions (planned)
+* IntelliJ IDEA
+* Git
 
 ---
 
-## Project Vision
+# Architecture
 
-MoneyMap aims to provide users with:
+The backend follows principles inspired by:
 
-* Monthly budgeting
-* Recurring payment tracking
-* Savings goal management
-* Debt tracking
-* Spending analytics
-* Financial reports
-* Financial health insights
-
-Future enhancements:
-
-* Open Banking integrations
-* AI-powered financial recommendations
-* Investment tracking
-* Shared household budgets
-* Mobile applications
-
----
-
-## Architecture
-
-The backend follows:
-
-* Hexagonal Architecture
 * Domain-Driven Design (DDD)
-* Clean Architecture principles
+* Clean Architecture
+* Hexagonal Architecture
 
-### High-Level Structure
+## High-Level Architecture
 
 ```text
-┌─────────────────────┐
-│    REST Controllers │
-└──────────┬──────────┘
+┌──────────────────────┐
+│     REST API Layer   │
+│     Controllers      │
+└──────────┬───────────┘
            │
            ▼
-┌─────────────────────┐
-│ Application Layer   │
-│ Use Cases / Services│
-└──────────┬──────────┘
+┌──────────────────────┐
+│    Application       │
+│      Services        │
+└──────────┬───────────┘
            │
            ▼
-┌─────────────────────┐
-│ Domain Layer        │
-│ Entities & Rules    │
-└──────────┬──────────┘
+┌──────────────────────┐
+│       Domain         │
+│ Business Rules       │
+│     Entities         │
+└──────────┬───────────┘
            │
            ▼
-┌─────────────────────┐
-│ Infrastructure      │
-│ DB, External APIs   │
-└─────────────────────┘
+┌──────────────────────┐
+│   Infrastructure     │
+│ PostgreSQL / Docker  │
+│ Future Integrations  │
+└──────────────────────┘
 ```
 
 ---
 
-## Planned Domain Modules
+# Project Structure
 
-### Budgets
+```text
+backend/
+├── src/
+│   ├── main/
+│   │   ├── kotlin/
+│   │   │   └── com/moneymap/
+│   │   │       ├── controllers/
+│   │   │       ├── services/
+│   │   │       ├── repositories/
+│   │   │       ├── domain/
+│   │   │       ├── models/
+│   │   │       └── config/
+│   │   │
+│   │   └── resources/
+│   │       ├── application.yml
+│   │       └── logback.xml
+│   │
+│   └── test/
+│
+├── docker-compose.yml
+├── Dockerfile
+├── build.gradle.kts
+└── settings.gradle.kts
+```
 
-Manage monthly income and expenses.
+---
+
+# Domain Roadmap
+
+## Users
+
+* Registration
+* Login
+* Authentication
+* Profile management
+
+## Budgets
+
+Track monthly income and spending.
 
 Examples:
 
@@ -104,50 +208,53 @@ Examples:
 * Utilities
 * Savings
 
-### Recurring Payments
+## Goals
 
-Track recurring commitments such as:
-
-* Netflix
-* Gym Memberships
-* Insurance
-* Internet Services
-
-### Goals
-
-Track financial goals.
+Track financial objectives.
 
 Examples:
 
 * Emergency Fund
-* Holiday Savings
+* Holiday Fund
+* Laptop Fund
 * Home Deposit
-* New Car
 
-### Debt
+## Recurring Expenses
 
-Monitor and reduce debt.
+Track ongoing commitments.
 
 Examples:
 
-* Credit Cards
-* Personal Loans
-* Student Loans
+* Netflix
+* Spotify
+* Insurance
+* Internet
 
-### Insights
+## Reports
 
-Generate analytics including:
+Generate financial insights.
 
-* Monthly spending trends
+Examples:
+
+* Spending trends
 * Savings rate
-* Debt reduction progress
-* Category breakdowns
+* Goal progress
+* Category analysis
+
+## Debt Management
+
+Future functionality:
+
+* Credit card tracking
+* Personal loans
+* Repayment schedules
+* Debt reduction analytics
 
 ---
 
-## Local Development
+# Local Development
 
-### Prerequisites
+## Prerequisites
 
 Install:
 
@@ -160,28 +267,48 @@ Verify installation:
 
 ```bash
 java --version
-docker --version 
+docker --version
 docker compose version
 ```
 
 ---
 
-### Running Locally
-
-Clone the repository:
+## Clone Repository
 
 ```bash
 git clone https://github.com/tangani/MoneyMap.git
-cd backend
+cd MoneyMap/backend
 ```
 
-Start dependencies:
+---
+
+## Environment Variables
+
+Create a `.env` file:
+
+```env
+DATABASE_URL=jdbc:postgresql://localhost:6543/moneymap
+DATABASE_USERNAME=moneymap
+DATABASE_PASSWORD=moneymap
+```
+
+---
+
+## Start PostgreSQL
 
 ```bash
 docker compose up -d
 ```
 
-Run the application:
+Verify:
+
+```bash
+docker ps
+```
+
+---
+
+## Run Application
 
 ```bash
 ./gradlew run
@@ -193,15 +320,17 @@ Application:
 http://localhost:8080
 ```
 
-Health endpoint:
+Health Check:
 
-```text
+```http
 GET /health
 ```
 
 ---
 
-## Build
+# Build & Test
+
+Build:
 
 ```bash
 ./gradlew clean build
@@ -213,102 +342,134 @@ Run tests:
 ./gradlew test
 ```
 
----
+Run a single test:
 
-## API Roadmap
-
-### Authentication
-
-* User Registration
-* Login
-* JWT Authentication
-* Password Reset
-
-### Budget Management
-
-* Create Budget
-* Update Budget
-* Delete Budget
-* View Budget Summary
-
-### Recurring Expenses
-
-* Create Recurring Expense
-* Update Recurring Expense
-* Cancel Recurring Expense
-
-### Goals
-
-* Create Goal
-* Update Goal
-* Track Progress
-
-### Debt Tracking
-
-* Create Debt
-* Make Payments
-* Track Outstanding Balance
-
----
-
-## Environment Variables
-
-Example:
-
-```env
-DATABASE_URL=jdbc:postgresql://localhost:5432/moneymap
-DATABASE_USERNAME=postgres
-DATABASE_PASSWORD=postgres
-
-JWT_SECRET=change_me
+```bash
+./gradlew test --tests "*AuthControllerTest"
 ```
 
 ---
 
-## Future Infrastructure
+# API Roadmap
 
-Planned deployment stack:
+## Phase 1 — Foundations ✅
 
-* GitHub
-* GitHub Actions
-* AWS
+* Micronaut project setup
+* Docker support
+* PostgreSQL setup
+* Health endpoint
+* Authentication endpoints
+
+## Phase 2 — Core Budgeting 🚧
+
+* Budget APIs
+* Budget persistence
+* Budget summaries
+* Goal APIs
+* Goal persistence
+
+## Phase 3 — Financial Tracking
+
+* Recurring expenses
+* Transaction tracking
+* Category management
+
+## Phase 4 — Insights
+
+* Reports
+* Analytics
+* Financial forecasting
+
+## Phase 5 — Platform Expansion
+
+* Mobile applications
+* Push notifications
+* Banking integrations
+* AI-assisted budgeting
+
+---
+
+# Deployment
+
+Current deployment target:
+
+* Render
 * Docker
 * PostgreSQL
-* Cloud Monitoring
+
+Future deployment options:
+
+* AWS
+* Railway
+* Kubernetes
+* Managed PostgreSQL
 
 ---
 
-## Useful Links
+# Future Integrations
 
-### Micronaut
+Potential integrations include:
 
-* https://docs.micronaut.io/4.10.14/guide/index.html
-* https://docs.micronaut.io/4.10.14/api/index.html
-* https://guides.micronaut.io/
-
-### Gradle
-
-* https://gradle.org/
-
-### Kotlin
-
-* https://kotlinlang.org/
+* Open Banking APIs
+* Bank transaction imports
+* Push notification providers
+* Email providers
+* Analytics platforms
 
 ---
 
-## Current Status
+# Useful Links
 
-🚧 Early Development
+## Micronaut
 
-Current milestone:
+https://docs.micronaut.io/
 
-* Backend project setup
-* Health endpoint
-* Initial architecture
-* Domain modelling
+## Kotlin
 
-Next milestone:
+https://kotlinlang.org/
 
-* User Authentication
-* Database integration
-* Budget CRUD functionality
+## PostgreSQL
+
+https://www.postgresql.org/
+
+## Gradle
+
+https://gradle.org/
+
+---
+
+# Current Status
+
+🚧 Active Development
+
+## Completed
+
+* Micronaut backend setup
+* Docker support
+* PostgreSQL configuration
+* User signup endpoint
+* User login endpoint
+* Request validation
+* API serialization
+
+## In Progress
+
+* Database persistence
+* Password hashing
+* Budget APIs
+* Goal APIs
+
+## Next Milestone
+
+* Complete authentication flow
+* Persist users to PostgreSQL
+* Budget CRUD operations
+* Frontend-to-backend integration
+
+---
+
+# License
+
+Private Project
+
+© MoneyMap
