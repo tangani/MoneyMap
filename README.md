@@ -1,114 +1,217 @@
 # 💰 MoneyMap
 
-A modern personal finance platform designed to help individuals build better financial habits through budgeting, savings goals, debt tracking, recurring expense management, and financial insights.
+MoneyMap is a modern personal finance platform designed to help individuals take control of their finances through budgeting, savings goals, recurring expense tracking, spending insights, and long-term financial planning.
+
+The project is being built as a full-stack platform consisting of:
+
+* 🌐 Web Application
+* 📱 Android Application (planned)
+* 📱 iOS Application (planned)
+* ⚙️ Kotlin + Micronaut Backend APIs
+* 🗄️ PostgreSQL Database
 
 ---
 
-## 🎯 Vision
+# 🎯 Vision
 
-MoneyMap was created to make personal finance accessible, understandable, and actionable.
+Many people know how much they earn but struggle to understand where their money goes.
 
-The goal is to provide users with a single platform where they can:
+MoneyMap aims to provide a single platform where users can:
 
 * Track income and expenses
-* Manage monthly budgets
+* Build realistic monthly budgets
 * Monitor recurring payments
 * Set and achieve savings goals
-* Track debt repayment
-* Understand spending patterns
-* Improve overall financial health
+* Track debt repayment progress
+* Understand spending habits
+* Improve financial decision-making
+
+The long-term goal is to create a modern, accessible financial management platform that helps users build sustainable financial habits.
 
 ---
 
-## 🚧 Current Status
+# 🚀 Current Status
 
-### ✅ Completed
+## ✅ Completed
 
-* Project setup
-* Frontend scaffolding
-* Backend scaffolding
-* Authentication pages
-* Budget UI prototype
-* Recurring payments UI prototype
+### Frontend
 
-### 🔨 In Progress
+* Landing page
+* Signup page
+* Login page
+* Budget dashboard
+* Goals page
+* Recurring expenses page
+* Reports page
+* Settings page
+* Responsive navigation
 
-* Backend domain modelling
-* API development
-* Database design
+### Backend
 
-### 📋 Planned
+* Micronaut project setup
+* Docker support
+* PostgreSQL configuration
+* User signup API
+* User login API
+* Request validation
+* API serialization
 
-* User authentication
-* Budget management
-* Savings goals
-* Debt tracking
-* Spending analytics
-* Reports and exports
+### Infrastructure
+
+* GitHub repositories
+* Docker development environment
+* Backend deployment
+* Frontend deployment preparation
 
 ---
 
-## 🏗️ Architecture
+## 🚧 In Progress
+
+### Authentication
+
+* Password hashing
+* Session management
+* JWT authentication
+
+### Persistence
+
+* User persistence
+* Budget persistence
+* Goal persistence
+
+### API Development
+
+* Budget APIs
+* Goal APIs
+* Recurring expense APIs
+
+---
+
+## 📋 Planned
+
+### Core Finance Features
+
+* Transaction tracking
+* Expense categorization
+* Debt management
+* Budget analytics
+
+### Insights
+
+* Spending trends
+* Financial reports
+* Savings forecasting
+* Goal performance analytics
+
+### Platform Expansion
+
+* Android application
+* iOS application
+* Push notifications
+* Multi-currency support
+
+### Advanced Features
+
+* Bank integrations
+* Open Banking APIs
+* AI-powered budgeting assistance
+* Financial forecasting
+
+---
+
+# 🏗️ Architecture
 
 ```text
-┌──────────────┐
-│   Frontend   │
-│   Next.js    │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│   Backend    │
-│  Micronaut   │
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ PostgreSQL   │
-└──────────────┘
+┌─────────────────────┐
+│      Frontend       │
+│ Next.js + React     │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│       Backend       │
+│ Kotlin + Micronaut  │
+└──────────┬──────────┘
+           │
+           ▼
+┌─────────────────────┐
+│     PostgreSQL      │
+└─────────────────────┘
+```
+
+### Long-Term Architecture
+
+```text
+                    ┌─────────────┐
+                    │ Android App │
+                    └──────┬──────┘
+                           │
+                           │
+┌─────────────┐            ▼            ┌─────────────┐
+│  Web App    │ ─────► Backend APIs ◄──│   iOS App   │
+└─────────────┘                         └─────────────┘
+                           │
+                           ▼
+                    ┌─────────────┐
+                    │ PostgreSQL  │
+                    └─────────────┘
 ```
 
 ---
 
-## 🛠️ Technology Stack
+# 🛠️ Technology Stack
 
-### Frontend
+## Frontend
 
-* Next.js
-* React
+* Next.js 16
+* React 19
 * TypeScript
 * Tailwind CSS
 
-### Backend
+## Backend
 
 * Kotlin
 * Micronaut
 * Java 21
+* Gradle
 
-### Database
+## Database
 
 * PostgreSQL
 
-### Infrastructure
+## Infrastructure
 
 * Docker
+* Docker Compose
+* Render
 * GitHub
-* AWS (planned)
+
+## Future Technologies
+
+* Android (Kotlin)
+* iOS (Swift)
+* Push Notifications
+* Cloud Monitoring
+* Analytics
 
 ---
 
-## 📁 Repository Structure
+# 📁 Repository Structure
 
 ```text
-MoneyMap
+MoneyMap/
 │
-├── frontend
-│   ├── app
-│   ├── components
-│   └── public
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   ├── types/
+│   └── README.md
 │
-├── backend
-│   ├── src
+├── backend/
+│   ├── src/
+│   ├── Dockerfile
+│   ├── docker-compose.yml
 │   ├── build.gradle.kts
 │   └── README.md
 │
@@ -117,101 +220,181 @@ MoneyMap
 
 ---
 
-## 🚀 Running Locally
+# 🚀 Getting Started
 
-### Frontend
+## Clone Repository
+
+```bash
+git clone https://github.com/tangani/MoneyMap.git
+cd MoneyMap
+```
+
+---
+
+## Run Frontend
 
 ```bash
 cd frontend
+
 npm install
 npm run dev
 ```
 
-Frontend available at:
+Frontend:
 
 ```text
 http://localhost:3000
 ```
 
-### Backend
+---
+
+## Run Backend
+
+Start PostgreSQL:
 
 ```bash
 cd backend
+
+docker compose up -d
+```
+
+Run backend:
+
+```bash
 ./gradlew run
 ```
 
-Backend available at:
+Backend:
 
 ```text
 http://localhost:8080
 ```
 
----
+Health Check:
 
-## 🗺️ Roadmap
-
-### Phase 1 — Foundation
-
-* [x] Project setup
-* [x] Frontend scaffolding
-* [x] Backend scaffolding
-* [ ] User authentication
-* [ ] PostgreSQL integration
-
-### Phase 2 — Core Budgeting
-
-* [ ] Budget management
-* [ ] Recurring payments
-* [ ] Savings goals
-
-### Phase 3 — Financial Insights
-
-* [ ] Spending analytics
-* [ ] Reports
-* [ ] Recommendations
-
-### Phase 4 — Platform Growth
-
-* [ ] Mobile application
-* [ ] Open Banking integration
-* [ ] AI-powered financial insights
+```text
+GET /health
+```
 
 ---
 
-## 🤔 Why This Project Exists
+# 🗺️ Development Roadmap
 
-Many people know they should budget but struggle to maintain visibility into their finances.
+## Phase 1 — Foundations ✅
 
-MoneyMap aims to simplify personal financial management by providing a clean, modern, and actionable platform for tracking money, understanding spending habits, and achieving financial goals.
-
----
-
-## 🌱 Project Philosophy
-
-MoneyMap is being built with a long-term focus on:
-
-* Financial awareness
-* Simplicity
-* Transparency
-* User privacy
-* Sustainable financial habits
-
-The objective is not simply to track money, but to help users make better financial decisions.
+* [x] Repository setup
+* [x] Frontend application structure
+* [x] Backend application structure
+* [x] Authentication pages
+* [x] Signup API
+* [x] Login API
+* [x] Docker development environment
 
 ---
 
-## 📚 Documentation
+## Phase 2 — Core Budgeting 🚧
 
-Additional documentation can be found in:
+* [ ] PostgreSQL persistence
+* [ ] Budget CRUD APIs
+* [ ] Goal CRUD APIs
+* [ ] Recurring expense APIs
+* [ ] Frontend integration
+
+---
+
+## Phase 3 — Financial Tracking
+
+* [ ] Transaction management
+* [ ] Expense categorization
+* [ ] Spending history
+* [ ] Monthly summaries
+
+---
+
+## Phase 4 — Insights & Reporting
+
+* [ ] Financial reports
+* [ ] Savings analytics
+* [ ] Goal tracking insights
+* [ ] Forecasting
+
+---
+
+## Phase 5 — Mobile Applications
+
+* [ ] Android app
+* [ ] iOS app
+* [ ] Push notifications
+* [ ] Offline support
+
+---
+
+## Phase 6 — Financial Platform
+
+* [ ] Bank integrations
+* [ ] Open Banking
+* [ ] AI-powered budgeting
+* [ ] Personalized recommendations
+
+---
+
+# 💡 Why MoneyMap Exists
+
+Personal finance software often falls into one of two categories:
+
+1. Too complicated for everyday users.
+2. Too simple to provide meaningful financial insights.
+
+MoneyMap aims to strike a balance between simplicity and usefulness.
+
+The goal is not merely to record financial information, but to help users:
+
+* Understand their finances
+* Build healthy financial habits
+* Make informed decisions
+* Achieve long-term financial goals
+
+---
+
+# 🌱 Project Philosophy
+
+MoneyMap is built around five principles:
+
+### Simplicity
+
+Financial tools should be easy to use.
+
+### Transparency
+
+Users should understand their financial position clearly.
+
+### Privacy
+
+Financial data should be handled responsibly.
+
+### Accessibility
+
+Good financial tools should be available to everyone.
+
+### Sustainability
+
+The focus is on building long-term financial habits rather than short-term fixes.
+
+---
+
+# 📚 Documentation
+
+Additional documentation is available in:
 
 * `frontend/README.md`
 * `backend/README.md`
 
 ---
 
-## 📄 License
+# 📄 License
 
-This project is currently under active development.
+Private Project
 
-License information will be added before the first public release.
+MoneyMap is currently under active development and is not yet available for public use.
 
+© 2026 MoneyMap
