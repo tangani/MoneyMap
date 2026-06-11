@@ -1,104 +1,216 @@
-# MoneyMap Frontend
+# MoneyMap
 
-MoneyMap is a personal finance and budgeting application designed to help users take control of their finances through budgeting, savings planning, debt tracking, and spending insights.
+MoneyMap is a personal finance platform designed to help individuals build better financial habits through budgeting, goal-based saving, expense tracking, and financial insights.
 
-## Features
+The long-term vision is to provide a simple, modern, and accessible financial management experience for users across web, Android, and iOS platforms.
+
+---
+
+## Vision
+
+Many people know where they earn money but struggle to understand where it goes.
+
+MoneyMap aims to bridge that gap by providing tools that help users:
+
+* Create realistic budgets
+* Track recurring expenses
+* Set and achieve savings goals
+* Monitor spending habits
+* Build healthier financial habits
+* Make informed financial decisions
+
+---
+
+## Current Features
+
+### Authentication
+
+* User registration
+* Secure login
+* Backend-powered authentication APIs
+* Session management (in progress)
 
 ### Budget Management
 
-Create and manage monthly budgets across different spending categories.
+Create and manage monthly budgets by category.
 
-### Recurring Payments
+Features include:
 
-Track subscriptions, rent, utilities, and other recurring expenses.
+* Monthly income tracking
+* Budget allocation
+* Expense categorization
+* Remaining balance calculation
 
 ### Financial Goals
 
-Set savings goals and monitor progress over time.
+Track progress towards personal financial objectives.
 
-### Spending Insights
+Examples:
 
-Visualize spending habits and identify opportunities to save.
+* Emergency fund
+* Laptop fund
+* Holiday savings
+* Home deposit
 
-### Debt Tracking
+### Recurring Expenses
 
-Monitor outstanding debts and repayment progress.
+Monitor recurring monthly commitments such as:
 
-### Savings Planning
+* Rent
+* Utilities
+* Subscriptions
+* Insurance
+* Transport costs
 
-Plan and track short-term and long-term savings objectives.
+### Reports & Insights
 
-### Reports
+Gain visibility into financial behaviour through:
 
-Generate financial summaries and track performance over time.
+* Spending summaries
+* Budget performance
+* Goal progress tracking
 
 ---
 
-## Tech Stack
+## Planned Features
 
-* Next.js
-* React
+### Transactions
+
+* Manual transaction tracking
+* Transaction categorization
+* Spending history
+
+### Bank Integrations
+
+* Connect bank accounts
+* Automatic transaction imports
+* Account balance synchronization
+
+### AI-Assisted Budgeting
+
+* Budget recommendations
+* Spending trend analysis
+* Personalized savings suggestions
+
+### Financial Forecasting
+
+* Cash-flow projections
+* Savings forecasts
+* Budget simulations
+
+### Debt Management
+
+* Debt tracking
+* Repayment planning
+* Progress monitoring
+
+### Mobile Applications
+
+* Android application
+* iOS application
+* Push notifications
+* Offline support
+
+### Multi-Currency Support
+
+Support for users across different countries and currencies.
+
+---
+
+## Technology Stack
+
+### Frontend
+
+* Next.js 16
+* React 19
 * TypeScript
 * Tailwind CSS
 
+### Backend
+
+* Kotlin
+* Micronaut
+* PostgreSQL
+* Docker
+
+### Future Infrastructure
+
+* Cloud-hosted backend
+* Mobile applications
+* Push notifications
+* Analytics and monitoring
+
 ---
-
-### Run the Development Server
-
-Using npm:
-
-```bash
-npm run dev
-```
-
-Using Yarn:
-
-```bash
-yarn dev
-``` 
-
-Using pnpm:
-
-```bash
-pnpm dev
-```
-
-Using Bun:
-
-```bash
-bun dev
-```
-
 
 ## Project Structure
 
 ```text
-src/
+frontend/
 ├── app/
 │   ├── page.tsx
 │   ├── login/
 │   ├── signup/
 │   ├── budget/
-│   └── recurring/
+│   ├── goals/
+│   ├── recurring-expenses/
+│   ├── reports/
+│   └── settings/
 │
 ├── components/
+│   ├── budget/
+│   ├── goals/
+│   ├── recurring/
+│   ├── reports/
+│   ├── settings/
+│   └── shared/
+│
 ├── lib/
-└── types/
+├── types/
+└── public/
 ```
 
 ---
 
 ## Pages
 
-| Page      | Description                       |
-| --------- | --------------------------------- |
-| Home      | Landing page introducing MoneyMap |
-| Login     | User authentication               |
-| Signup    | New account registration          |
-| Budget    | Budget management dashboard       |
-| Recurring | Manage recurring expenses         |
-| Goals     | Savings and financial goals       |
-| Reports   | Financial reporting and analytics |
+| Page               | Description                              |
+| ------------------ | ---------------------------------------- |
+| Home               | Landing page introducing MoneyMap        |
+| Login              | Existing user authentication             |
+| Signup             | New account registration                 |
+| Budget             | Budget dashboard and monthly planning    |
+| Goals              | Savings goals and progress tracking      |
+| Recurring Expenses | Manage subscriptions and recurring costs |
+| Reports            | Financial summaries and analytics        |
+| Settings           | User preferences and account management  |
+
+---
+
+## User Journey
+
+### 1. Create Account
+
+Users sign up and create a MoneyMap account.
+
+### 2. Set Financial Goals
+
+Define savings objectives and target amounts.
+
+### 3. Create Monthly Budget
+
+Allocate income across spending categories.
+
+### 4. Track Expenses
+
+Monitor spending and recurring commitments.
+
+### 5. Review Progress
+
+Analyze financial performance and goal completion.
+
+### 6. Improve Financial Habits
+
+Use insights to make better financial decisions.
 
 ---
 
@@ -115,7 +227,7 @@ Clone the repository:
 
 ```bash
 git clone <repository-url>
-cd moneymap-frontend
+cd MoneyMap/frontend
 ```
 
 Install dependencies:
@@ -124,19 +236,17 @@ Install dependencies:
 npm install
 ```
 
-Run the development server:
+Start the development server:
 
 ```bash
 npm run dev
 ```
 
-Open your browser and navigate to:
+Open:
 
 ```text
 http://localhost:3000
 ```
-
-The application will automatically reload when changes are made.
 
 ---
 
@@ -146,49 +256,66 @@ The application will automatically reload when changes are made.
 npm run dev      # Start development server
 npm run build    # Create production build
 npm run start    # Start production server
-npm run lint     # Run linting checks
+npm run lint     # Run lint checks
 ```
 
 ---
 
-## User Journey
+## Development Roadmap
 
-### Landing Page
+### Phase 1 — Foundations ✅
 
-* Hero Section
-* Why MoneyMap?
-* Core Features Overview
-* How It Works
-* Call-to-Action (CTA)
+* Landing page
+* Authentication pages
+* Budget dashboard
+* Goals page
+* Recurring expenses page
+* Reports page
+* Settings page
 
-### Auth Flow
+### Phase 2 — Backend Integration 🚧
 
-1. Sign Up
-2. Create Account
-3. Set Financial Goals
-4. Create Budget
-5. Track Spending
-6. Review Insights
+* User persistence
+* Authentication APIs
+* Budget APIs
+* Goal APIs
+* PostgreSQL integration
+
+### Phase 3 — Transactions
+
+* Transaction management
+* Expense categorization
+* Spending history
+
+### Phase 4 — Insights
+
+* Reporting
+* Analytics
+* Forecasting
+
+### Phase 5 — Mobile Applications
+
+* Android app
+* iOS app
+* Push notifications
 
 ---
 
-## Future Roadmap
+## Project Status
 
-* Bank account integrations
-* Transaction categorization
-* AI-powered budgeting suggestions
-* CSV import/export
-* Financial forecasting
-* Mobile application
-* Multi-currency support
+🚧 Active Development
+
+MoneyMap is currently being developed as a full-stack personal finance platform.
+
+The frontend is functional and the backend APIs are actively being integrated. Features, architecture, and implementation details may evolve as the project grows.
 
 ---
 
-## Status
+## Contributing
 
-🚧 Early Development
+This project is currently private and under active development.
 
-MoneyMap is currently under active development. Features and architecture may change as the product evolves.
+Contributions, feedback, and suggestions are welcome as the platform evolves.
 
 ---
 
@@ -196,7 +323,4 @@ MoneyMap is currently under active development. Features and architecture may ch
 
 Private Project
 
-```
-
-This version reflects what MoneyMap actually is, communicates your vision clearly, and gives your collaborator enough context to contribute without asking a lot of questions. It also aligns nicely with your longer-term goal of building a serious fintech-style portfolio project rather than just a tutorial app.  
-```
+© MoneyMap
