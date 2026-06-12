@@ -46,7 +46,7 @@ class BudgetService(
                     name = item.name,
                     amountInCents = toCents(item.amount),
                     category = item.category,
-                    type = if (item.category == "Goals") "SAVING" else "EXPENSE",
+                    type = inferItemType(item.category),
                 )
             },
             goal = goal?.let {
@@ -61,7 +61,10 @@ class BudgetService(
         )
     }
 
-    fun createBudget(userId: UUID, request: CreateBudgetRequest): BudgetResponse {
+    fun createBudget(
+        userId: UUID,
+        request: CreateBudgetRequest,
+    ): BudgetResponse {
         val existingBudget = budgetRepository.findByUserId(userId)
 
         if (existingBudget != null) {
@@ -74,7 +77,7 @@ class BudgetService(
             Budget(
                 id = UUID.randomUUID(),
                 userId = userId,
-                monthlyIncome = request.monthlyIncome,
+                monthlyIncome = fromCents(request.monthlyIncomeInCents),
                 createdAt = now,
                 updatedAt = now,
             )
@@ -88,6 +91,7 @@ class BudgetService(
         request: UpdateMonthlyIncomeRequest,
     ): BudgetResponse {
         val now = LocalDateTime.now()
+        val monthlyIncome = fromCents(request.monthlyIncomeInCents)
 
         val existingBudget = budgetRepository.findByUserId(userId)
 
@@ -96,7 +100,7 @@ class BudgetService(
                 Budget(
                     id = UUID.randomUUID(),
                     userId = userId,
-                    monthlyIncome = fromCents(request.monthlyIncomeInCents),
+                    monthlyIncome = monthlyIncome,
                     createdAt = now,
                     updatedAt = now,
                 )
@@ -107,7 +111,7 @@ class BudgetService(
 
         budgetRepository.update(
             existingBudget.copy(
-                monthlyIncome = fromCents(request.monthlyIncomeInCents),
+                monthlyIncome = monthlyIncome,
                 updatedAt = now,
             )
         )
@@ -119,18 +123,16 @@ class BudgetService(
         userId: UUID,
         request: CreateBudgetItemRequest,
     ): BudgetResponse {
-        val budget = budgetRepository.findByUserId(userId)
-            ?: createEmptyBudget(userId)
-
+        val budget = getOrCreateBudget(userId)
         val now = LocalDateTime.now()
 
         budgetItemRepository.save(
             BudgetItem(
                 id = UUID.randomUUID(),
                 budgetId = budget.id,
-                name = request.name,
-                category = request.category,
-                amount = request.amount,
+                name = request.name.trim(),
+                category = request.category.trim(),
+                amount = fromCents(request.amountInCents),
                 createdAt = now,
                 updatedAt = now,
             )
@@ -143,24 +145,27 @@ class BudgetService(
         userId: UUID,
         request: CreateBudgetGoalRequest,
     ): BudgetResponse {
-        val budget = budgetRepository.findByUserId(userId)
-            ?: createEmptyBudget(userId)
-
+        val budget = getOrCreateBudget(userId)
         val now = LocalDateTime.now()
 
         budgetGoalRepository.save(
             BudgetGoal(
                 id = UUID.randomUUID(),
                 budgetId = budget.id,
-                name = request.name,
-                targetAmount = request.targetAmount,
-                monthlyContribution = request.monthlyContribution,
+                name = request.name.trim(),
+                targetAmount = fromCents(request.targetAmountInCents),
+                monthlyContribution = fromCents(request.monthlyContributionInCents),
                 createdAt = now,
                 updatedAt = now,
             )
         )
 
         return getBudget(userId)
+    }
+
+    private fun getOrCreateBudget(userId: UUID): Budget {
+        return budgetRepository.findByUserId(userId)
+            ?: createEmptyBudget(userId)
     }
 
     private fun createEmptyBudget(userId: UUID): Budget {
@@ -175,5 +180,13 @@ class BudgetService(
                 updatedAt = now,
             )
         )
+    }
+
+    private fun inferItemType(category: String): String {
+        return if (category.equals("Goals", ignoreCase = true)) {
+            "SAVING"
+        } else {
+            "EXPENSE"
+        }
     }
 }
