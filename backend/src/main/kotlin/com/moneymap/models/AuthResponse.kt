@@ -9,5 +9,6 @@ data class AuthResponse(
     val firstName: String,
     val lastName: String,
     val email: String,
+    val token: String,
     val message: String
 )

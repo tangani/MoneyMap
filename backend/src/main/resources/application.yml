@@ -6,6 +6,7 @@ micronaut:
         web:
           allowed-origins:
             - http://localhost:3000
+            - https://your-frontend-domain.vercel.app
           allowed-methods:
             - GET
             - POST
@@ -16,6 +17,18 @@ micronaut:
           allowed-headers:
             - Content-Type
             - Authorization
+  security:
+    enabled: true
+    token:
+      jwt:
+        enabled: true
+        generator:
+          access-token:
+            expiration: 3600
+        signatures:
+          secret:
+            generator:
+              secret: ${JWT_SECRET}
 
 datasources:
   default:

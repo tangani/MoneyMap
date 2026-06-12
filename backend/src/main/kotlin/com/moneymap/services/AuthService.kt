@@ -14,7 +14,8 @@ import org.mindrot.jbcrypt.BCrypt
 
 @Singleton
 class AuthService(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val tokenService: TokenService,
 ) {
 
     fun signup(request: SignupRequest): AuthResponse {
@@ -46,6 +47,7 @@ class AuthService(
             firstName = savedUser.firstName,
             lastName = savedUser.lastName,
             email = savedUser.email,
+            token = tokenService.generateToken(savedUser.id, savedUser.email),
             message = "Signup successful"
         )
     }
@@ -72,7 +74,9 @@ class AuthService(
             firstName = user.firstName,
             lastName = user.lastName,
             email = user.email,
+            token = tokenService.generateToken(user.id, user.email),
             message = "Login successful"
         )
+
     }
 }
