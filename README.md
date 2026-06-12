@@ -149,7 +149,7 @@ The long-term goal is to create a modern, accessible financial management platfo
                            │
 ┌─────────────┐            ▼           ┌─────────────┐
 │  Web App    │ ─────► Backend APIs ◄──│   iOS App   │
-└─────────────┘                        └─────────────┘
+└─────────────┘                         └─────────────┘
                            │
                            ▼
                     ┌─────────────┐
@@ -285,55 +285,79 @@ GET /health
 * [x] Repository setup
 * [x] Frontend application structure
 * [x] Backend application structure
-* [x] Authentication pages
-* [x] Signup API
-* [x] Login API
 * [x] Docker development environment
+* [x] PostgreSQL integration
+* [x] User authentication
+* [x] JWT authentication
+* [x] Frontend ↔ Backend integration
 
 ---
 
-## Phase 2 — Core Budgeting 🚧
+## Phase 2 — Budget Management ✅
 
-* [ ] PostgreSQL persistence
-* [ ] Budget CRUD APIs
-* [ ] Goal CRUD APIs
+* [x] Budget persistence
+* [x] Budget income management
+* [x] Budget item management
+* [x] Budget goal management
+* [x] Database persistence
+* [x] Refresh-safe user data
+
+---
+
+## Phase 3 — Budget Enhancements 🚧
+
+* [ ] Edit budget items
+* [ ] Delete budget items
+* [ ] Edit budget goals
+* [ ] Goal progress tracking
+* [ ] Validation improvements
+
+---
+
+## Phase 4 — Recurring Expenses
+
+* [ ] Recurring expense persistence
 * [ ] Recurring expense APIs
 * [ ] Frontend integration
+* [ ] Monthly automation
 
 ---
 
-## Phase 3 — Financial Tracking
+## Phase 5 — Financial Tracking
 
 * [ ] Transaction management
 * [ ] Expense categorization
 * [ ] Spending history
 * [ ] Monthly summaries
+* [ ] Debt tracking
 
 ---
 
-## Phase 4 — Insights & Reporting
+## Phase 6 — Insights & Reporting
 
 * [ ] Financial reports
 * [ ] Savings analytics
-* [ ] Goal tracking insights
+* [ ] Goal performance insights
 * [ ] Forecasting
+* [ ] Export functionality
 
 ---
 
-## Phase 5 — Mobile Applications
+## Phase 7 — Mobile Applications
 
-* [ ] Android app
-* [ ] iOS app
+* [ ] Android application
+* [ ] iOS application
 * [ ] Push notifications
 * [ ] Offline support
 
 ---
 
-## Phase 6 — Financial Platform
+## Phase 8 — Financial Platform
 
 * [ ] Bank integrations
-* [ ] Open Banking
+* [ ] Open Banking APIs
 * [ ] AI-powered budgeting
+* [ ] Financial forecasting
 * [ ] Personalized recommendations
 
 ---
