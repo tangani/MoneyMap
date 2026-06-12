@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 export default function SignupPage() {
-    const [name, setName] = useState("");
+    const [firstName, setFirstName] = useState("");
     const [surname, setSurname] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -22,7 +22,7 @@ export default function SignupPage() {
         confirmPassword.length > 0 && password !== confirmPassword;
 
     const formIsValid =
-        name.trim().length > 0 &&
+        firstName.trim().length > 0 &&
         surname.trim().length > 0 &&
         email.trim().length > 0 &&
         passwordsMatch;
@@ -38,7 +38,7 @@ export default function SignupPage() {
 
         try {
             const signupRequest = {
-                firstName: name.trim(),
+                firstName: firstName.trim(),
                 lastName: surname.trim(),
                 email: email.trim(),
                 password,
@@ -56,11 +56,31 @@ export default function SignupPage() {
             );
 
             if (!response.ok) {
-                setErrorMessage("Signup failed. Please try again.");
+                let backendMessage = "Signup failed. Please try again.";
+
+                try {
+                    const errorData = await response.json();
+
+                    backendMessage =
+                        errorData?._embedded?.errors?.[0]?.message ||
+                        errorData?.message ||
+                        backendMessage;
+                } catch {
+                    const errorText = await response.text();
+                    backendMessage = errorText || backendMessage;
+                }
+
+                setErrorMessage(backendMessage);
                 return;
             }
 
             setSuccessMessage("Account created successfully. You can now log in.");
+
+            setFirstName("");
+            setSurname("");
+            setEmail("");
+            setPassword("");
+            setConfirmPassword("");
         } catch (error) {
             console.error("Network error:", error);
             setErrorMessage("Could not connect to the server. Please try again.");
@@ -82,26 +102,34 @@ export default function SignupPage() {
 
                 <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Full name
+                        <label htmlFor="firstName" className="text-sm font-medium text-gray-700">
+                            First name
                         </label>
 
                         <input
+                            id="firstName"
+                            name="firstName"
                             type="text"
+                            required
+                            autoComplete="given-name"
                             placeholder="John"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
                             className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                         />
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="surname" className="text-sm font-medium text-gray-700">
                             Surname
                         </label>
 
                         <input
+                            id="surname"
+                            name="surname"
                             type="text"
+                            required
+                            autoComplete="family-name"
                             placeholder="Doe"
                             value={surname}
                             onChange={(e) => setSurname(e.target.value)}
@@ -110,12 +138,16 @@ export default function SignupPage() {
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="email" className="text-sm font-medium text-gray-700">
                             Email
                         </label>
 
                         <input
+                            id="email"
+                            name="email"
                             type="email"
+                            required
+                            autoComplete="email"
                             placeholder="you@example.com"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -124,12 +156,16 @@ export default function SignupPage() {
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
+                        <label htmlFor="password" className="text-sm font-medium text-gray-700">
                             Password
                         </label>
 
                         <input
+                            id="password"
+                            name="password"
                             type="password"
+                            required
+                            autoComplete="new-password"
                             placeholder="Create a password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -138,12 +174,16 @@ export default function SignupPage() {
                     </div>
 
                     <div>
-                        <label className="text-sm font-medium text-gray-700">
-                            Confirm Password
+                        <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
+                            Confirm password
                         </label>
 
                         <input
+                            id="confirmPassword"
+                            name="confirmPassword"
                             type="password"
+                            required
+                            autoComplete="new-password"
                             placeholder="Re-enter your password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -178,6 +218,7 @@ export default function SignupPage() {
                     >
                         {isLoading ? "Creating account..." : "Create Account"}
                     </button>
+
                     {errorMessage && (
                         <p className="text-sm text-red-500">{errorMessage}</p>
                     )}

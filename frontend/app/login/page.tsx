@@ -40,11 +40,16 @@ export default function LoginPage() {
             );
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Login failed:", response.status, errorText);
                 setErrorMessage("Invalid email or password.");
                 return;
             }
 
             const loginResponse = await response.json();
+
+            localStorage.setItem("moneymapToken", loginResponse.token);
+
             console.log("Login successful:", loginResponse);
 
             router.push("/budget");
