@@ -147,9 +147,9 @@ The long-term goal is to create a modern, accessible financial management platfo
                     └──────┬──────┘
                            │
                            │
-┌─────────────┐            ▼            ┌─────────────┐
+┌─────────────┐            ▼           ┌─────────────┐
 │  Web App    │ ─────► Backend APIs ◄──│   iOS App   │
-└─────────────┘                         └─────────────┘
+└─────────────┘                        └─────────────┘
                            │
                            ▼
                     ┌─────────────┐
