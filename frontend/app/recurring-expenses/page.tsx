@@ -2,6 +2,7 @@
 
 import AppShell from "@/components/AppShell";
 import { useState } from "react";
+import AuthGuard from "@/components/AuthGuard";
 
 type RecurringExpense = {
     name: string;
@@ -27,23 +28,25 @@ export default function RecurringExpensesPage() {
     }
 
     return (
-        <AppShell>
-            <section>
-                <PageHeader />
+        <AuthGuard>
+            <AppShell>
+                <section>
+                    <PageHeader />
 
-                <UpcomingPayments
-                    expenses={expenses}
-                    onAddPayment={() => setIsModalOpen(true)}
-                />
-
-                {isModalOpen && (
-                    <AddPaymentModal
-                        onClose={() => setIsModalOpen(false)}
-                        onAddPayment={handleAddPayment}
+                    <UpcomingPayments
+                        expenses={expenses}
+                        onAddPayment={() => setIsModalOpen(true)}
                     />
-                )}
-            </section>
-        </AppShell>
+
+                    {isModalOpen && (
+                        <AddPaymentModal
+                            onClose={() => setIsModalOpen(false)}
+                            onAddPayment={handleAddPayment}
+                        />
+                    )}
+                </section>
+            </AppShell>
+        </AuthGuard>
     );
 }
 

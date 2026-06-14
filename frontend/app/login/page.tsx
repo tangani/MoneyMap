@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+const API_BASE_URL = "https://moneymap-backend-l90f.onrender.com";
+
 export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -29,7 +31,7 @@ export default function LoginPage() {
             };
 
             const response = await fetch(
-                "https://moneymap-backend-l90f.onrender.com/api/v1/auth/login",
+                `${API_BASE_URL}/api/v1/auth/login`,
                 {
                     method: "POST",
                     headers: {
@@ -48,7 +50,7 @@ export default function LoginPage() {
 
             const loginResponse = await response.json();
 
-            localStorage.setItem("moneymapToken", loginResponse.token);
+            localStorage.setItem("token", loginResponse.token);
 
             console.log("Login successful:", loginResponse);
 

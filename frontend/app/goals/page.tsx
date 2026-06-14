@@ -2,6 +2,7 @@
 
 import AppShell from "@/components/AppShell";
 import { useState } from "react";
+import AuthGuard from "@/components/AuthGuard";
 
 type Goal = {
     name: string;
@@ -43,32 +44,34 @@ export default function GoalsPage() {
     }
 
     return (
-        <AppShell>
-            <section>
-                <PageHeader />
+        <AuthGuard>
+            <AppShell>
+                <section>
+                    <PageHeader />
 
-                <GoalComparison onSetGoal={() => setIsSetGoalModalOpen(true)} />
+                    <GoalComparison onSetGoal={() => setIsSetGoalModalOpen(true)} />
 
-                <GoalsList
-                    goals={goals}
-                    onAddGoal={() => setIsAddGoalModalOpen(true)}
-                />
-
-                {isSetGoalModalOpen && (
-                    <SetComparisonGoalModal
-                        onClose={() => setIsSetGoalModalOpen(false)}
-                        onSave={handleSetComparisonGoal}
+                    <GoalsList
+                        goals={goals}
+                        onAddGoal={() => setIsAddGoalModalOpen(true)}
                     />
-                )}
 
-                {isAddGoalModalOpen && (
-                    <AddGoalModal
-                        onClose={() => setIsAddGoalModalOpen(false)}
-                        onAddGoal={handleAddGoal}
-                    />
-                )}
-            </section>
-        </AppShell>
+                    {isSetGoalModalOpen && (
+                        <SetComparisonGoalModal
+                            onClose={() => setIsSetGoalModalOpen(false)}
+                            onSave={handleSetComparisonGoal}
+                        />
+                    )}
+
+                    {isAddGoalModalOpen && (
+                        <AddGoalModal
+                            onClose={() => setIsAddGoalModalOpen(false)}
+                            onAddGoal={handleAddGoal}
+                        />
+                    )}
+                </section>
+            </AppShell>
+        </AuthGuard>
     );
 }
 

@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import AuthGuard from "@/components/AuthGuard";
 
 const preferenceItems = [
     { label: "Currency", value: "South African Rand (ZAR)" },
@@ -14,17 +15,19 @@ const accountItems = [
 
 export default function SettingsPage() {
     return (
-        <AppShell>
-            <section>
-                <PageHeader />
+        <AuthGuard>
+            <AppShell>
+                <section>
+                    <PageHeader />
 
-                <ProfileSettings />
+                    <ProfileSettings />
 
-                <Preferences />
+                    <Preferences />
 
-                <AccountActions />
-            </section>
-        </AppShell>
+                    <AccountActions />
+                </section>
+            </AppShell>
+        </AuthGuard>
     );
 }
 

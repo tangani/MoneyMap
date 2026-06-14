@@ -2,6 +2,8 @@
 
 import AppShell from "@/components/AppShell";
 import { useEffect, useMemo, useState } from "react";
+import {useRouter} from "next/navigation";
+import AuthGuard from "@/components/AuthGuard";
 
 const API_BASE_URL = "https://moneymap-backend-l90f.onrender.com";
 
@@ -33,6 +35,7 @@ export default function BudgetPage() {
     const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+    const router = useRouter();
 
     const [monthlyIncomeInCents, setMonthlyIncomeInCents] = useState(0);
     const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
@@ -43,8 +46,15 @@ export default function BudgetPage() {
     const [errorMessage, setErrorMessage] = useState("");
 
     useEffect(() => {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
         loadBudget();
-    }, []);
+    }, [router]);
 
     async function loadBudget() {
         try {
@@ -198,72 +208,74 @@ export default function BudgetPage() {
     }
 
     return (
-        <AppShell>
-            <section>
-                <PageHeader />
+        <AuthGuard>
+            <AppShell>
+                <section>
+                    <PageHeader />
 
-                {errorMessage && (
-                    <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
-                        {errorMessage}
-                    </p>
-                )}
+                    {errorMessage && (
+                        <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+                            {errorMessage}
+                        </p>
+                    )}
 
-                <SummaryCards
-                    monthlyIncomeInCents={monthlyIncomeInCents}
-                    plannedExpensesInCents={plannedExpensesInCents}
-                    remainingInCents={remainingInCents}
-                    onEditIncome={() => setIsIncomeModalOpen(true)}
-                />
-
-                {goal ? (
-                    <BudgetGoalCard
-                        goal={goal}
-                        onSetGoal={() => setIsGoalModalOpen(true)}
+                    <SummaryCards
+                        monthlyIncomeInCents={monthlyIncomeInCents}
+                        plannedExpensesInCents={plannedExpensesInCents}
+                        remainingInCents={remainingInCents}
+                        onEditIncome={() => setIsIncomeModalOpen(true)}
                     />
-                ) : (
-                    <EmptyGoalCard onSetGoal={() => setIsGoalModalOpen(true)} />
-                )}
 
-                <BudgetItems
-                    budgetItems={budgetItems}
-                    onAddItem={() => setIsItemModalOpen(true)}
-                />
+                    {goal ? (
+                        <BudgetGoalCard
+                            goal={goal}
+                            onSetGoal={() => setIsGoalModalOpen(true)}
+                        />
+                    ) : (
+                        <EmptyGoalCard onSetGoal={() => setIsGoalModalOpen(true)} />
+                    )}
 
-                {isIncomeModalOpen && (
-                    <EditIncomeModal
-                        initialAmountInCents={monthlyIncomeInCents}
-                        isSaving={isSaving}
-                        onClose={() => setIsIncomeModalOpen(false)}
-                        onSave={handleUpdateIncome}
+                    <BudgetItems
+                        budgetItems={budgetItems}
+                        onAddItem={() => setIsItemModalOpen(true)}
                     />
-                )}
 
-                {isItemModalOpen && (
-                    <AddBudgetItemModal
-                        isSaving={isSaving}
-                        onClose={() => setIsItemModalOpen(false)}
-                        onAddItem={handleAddItem}
-                    />
-                )}
+                    {isIncomeModalOpen && (
+                        <EditIncomeModal
+                            initialAmountInCents={monthlyIncomeInCents}
+                            isSaving={isSaving}
+                            onClose={() => setIsIncomeModalOpen(false)}
+                            onSave={handleUpdateIncome}
+                        />
+                    )}
 
-                {isGoalModalOpen && (
-                    <SetGoalModal
-                        isSaving={isSaving}
-                        initialGoal={
-                            goal ?? {
-                                id: crypto.randomUUID(),
-                                name: "",
-                                targetAmountInCents: 0,
-                                currentAmountInCents: 0,
-                                monthlyContributionInCents: 0,
+                    {isItemModalOpen && (
+                        <AddBudgetItemModal
+                            isSaving={isSaving}
+                            onClose={() => setIsItemModalOpen(false)}
+                            onAddItem={handleAddItem}
+                        />
+                    )}
+
+                    {isGoalModalOpen && (
+                        <SetGoalModal
+                            isSaving={isSaving}
+                            initialGoal={
+                                goal ?? {
+                                    id: crypto.randomUUID(),
+                                    name: "",
+                                    targetAmountInCents: 0,
+                                    currentAmountInCents: 0,
+                                    monthlyContributionInCents: 0,
+                                }
                             }
-                        }
-                        onClose={() => setIsGoalModalOpen(false)}
-                        onSetGoal={handleSetGoal}
-                    />
-                )}
-            </section>
-        </AppShell>
+                            onClose={() => setIsGoalModalOpen(false)}
+                            onSetGoal={handleSetGoal}
+                        />
+                    )}
+                </section>
+            </AppShell>
+        </AuthGuard>
     );
 }
 
@@ -695,7 +707,7 @@ function SubmitButton({
 }
 
 function authenticatedFetch(path: string, options: RequestInit = {}) {
-    const token = localStorage.getItem("moneymapToken");
+    const token = localStorage.getItem("token");
 
     if (!token) {
         throw new Error("Missing auth token");

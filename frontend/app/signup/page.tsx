@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 
+const API_BASE_URL = "https://moneymap-backend-l90f.onrender.com";
+
 export default function SignupPage() {
     const [firstName, setFirstName] = useState("");
     const [surname, setSurname] = useState("");
@@ -45,7 +47,7 @@ export default function SignupPage() {
             };
 
             const response = await fetch(
-                "https://moneymap-backend-l90f.onrender.com/api/v1/auth/signup",
+                `${API_BASE_URL}/api/v1/auth/signup`,
                 {
                     method: "POST",
                     headers: {

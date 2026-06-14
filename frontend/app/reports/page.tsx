@@ -1,4 +1,5 @@
 import AppShell from "@/components/AppShell";
+import AuthGuard from "@/components/AuthGuard";
 
 const reportSummary = [
     { label: "Income", value: "R48,000" },
@@ -20,17 +21,19 @@ const insights = [
 
 export default function ReportsPage() {
     return (
-        <AppShell>
-            <section>
-                <PageHeader />
+        <AuthGuard>
+            <AppShell>
+                <section>
+                    <PageHeader />
 
-                <ReportSummary />
+                    <ReportSummary />
 
-                <SpendingBreakdown />
+                    <SpendingBreakdown />
 
-                <Insights />
-            </section>
-        </AppShell>
+                    <Insights />
+                </section>
+            </AppShell>
+        </AuthGuard>
     );
 }
 
