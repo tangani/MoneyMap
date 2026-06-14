@@ -21,6 +21,7 @@ export default function RecurringExpensesPage() {
 
     const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingExpense, setEditingExpense] = useState<RecurringExpense | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
@@ -87,6 +88,65 @@ export default function RecurringExpensesPage() {
         }
     }
 
+    async function handleUpdatePayment(expense: RecurringExpense) {
+        try {
+            setIsSaving(true);
+            setErrorMessage("");
+
+            const response = await authenticatedFetch(
+                `/api/v1/recurring-expenses/${expense.id}`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        name: expense.name,
+                        category: expense.category,
+                        amountInCents: expense.amountInCents,
+                        frequency: expense.frequency,
+                        nextPaymentDate: expense.nextPaymentDate,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                setErrorMessage("Could not update recurring payment.");
+                return;
+            }
+
+            const updatedExpenses: RecurringExpense[] = await response.json();
+            setExpenses(updatedExpenses);
+            setEditingExpense(null);
+        } catch (error) {
+            console.error("Update recurring payment failed:", error);
+            setErrorMessage("Could not connect to the server.");
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    async function handleDeletePayment(expenseId: string) {
+        try {
+            setIsSaving(true);
+            setErrorMessage("");
+
+            const response = await authenticatedFetch(`/api/v1/recurring-expenses/${expenseId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                setErrorMessage("Could not delete recurring payment.");
+                return;
+            }
+
+            const updatedExpenses: RecurringExpense[] = await response.json();
+            setExpenses(updatedExpenses);
+        } catch (error) {
+            console.error("Delete recurring payment failed:", error);
+            setErrorMessage("Could not connect to the server.");
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <AuthGuard>
@@ -112,6 +172,8 @@ export default function RecurringExpensesPage() {
                     <UpcomingPayments
                         expenses={expenses}
                         onAddPayment={() => setIsModalOpen(true)}
+                        onDeletePayment={handleDeletePayment}
+                        onEditPayment={(expense) => setEditingExpense(expense)}
                     />
 
                     {isModalOpen && (
@@ -119,6 +181,15 @@ export default function RecurringExpensesPage() {
                             isSaving={isSaving}
                             onClose={() => setIsModalOpen(false)}
                             onAddPayment={handleAddPayment}
+                        />
+                    )}
+
+                    {editingExpense && (
+                        <EditPaymentModal
+                            expense={editingExpense}
+                            isSaving={isSaving}
+                            onClose={() => setEditingExpense(null)}
+                            onSave={handleUpdatePayment}
                         />
                     )}
                 </section>
@@ -147,9 +218,13 @@ function PageHeader() {
 function UpcomingPayments({
                               expenses,
                               onAddPayment,
+                              onDeletePayment,
+                              onEditPayment,
                           }: {
     expenses: RecurringExpense[];
     onAddPayment: () => void;
+    onDeletePayment: (expenseId: string) => void;
+    onEditPayment: (expense: RecurringExpense) => void;
 }) {
     return (
         <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
@@ -174,7 +249,12 @@ function UpcomingPayments({
                     <p className="text-gray-600">No recurring payments yet.</p>
                 ) : (
                     expenses.map((expense) => (
-                        <RecurringExpenseItem key={expense.id} expense={expense} />
+                        <RecurringExpenseItem
+                            key={expense.id}
+                            expense={expense}
+                            onDeletePayment={onDeletePayment}
+                            onEditPayment={onEditPayment}
+                        />
                     ))
                 )}
             </div>
@@ -182,22 +262,53 @@ function UpcomingPayments({
     );
 }
 
-function RecurringExpenseItem({ expense }: { expense: RecurringExpense }) {
+function RecurringExpenseItem({
+                                  expense,
+                                  onDeletePayment,
+                                  onEditPayment,
+                              }: {
+    expense: RecurringExpense;
+    onDeletePayment: (expenseId: string) => void;
+    onEditPayment: (expense: RecurringExpense) => void;
+}) {
     return (
         <div className="rounded-2xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-                <h3 className="font-semibold">{expense.name}</h3>
-                <p className="font-bold">{formatCurrency(expense.amountInCents)}</p>
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <h3 className="font-semibold">{expense.name}</h3>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                        {formatFrequency(expense.frequency)} • Next payment:{" "}
+                        {formatDate(expense.nextPaymentDate)}
+                    </p>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                        {expense.category}
+                    </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-3">
+                    <p className="font-bold">
+                        {formatCurrency(expense.amountInCents)}
+                    </p>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => onEditPayment(expense)}
+                            className="rounded-lg border border-emerald-200 px-3 py-1 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                        >
+                            Edit
+                        </button>
+
+                        <button
+                            onClick={() => onDeletePayment(expense.id)}
+                            className="rounded-lg border border-red-200 px-3 py-1 text-sm font-semibold text-red-600 hover:bg-red-50"
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
-
-            <p className="mt-1 text-sm text-gray-500">
-                {formatFrequency(expense.frequency)} • Next payment:{" "}
-                {formatDate(expense.nextPaymentDate)}
-            </p>
-
-            <p className="mt-1 text-sm text-gray-500">
-                {expense.category}
-            </p>
         </div>
     );
 }
@@ -232,12 +343,119 @@ function AddPaymentModal({
     }
 
     return (
-        <Modal
+        <PaymentModalForm
             title="Add Recurring Payment"
             subtitle="Add subscriptions, rent, debit orders, or other repeated payments."
+            name={name}
+            category={category}
+            amount={amount}
+            frequency={frequency}
+            nextPaymentDate={nextPaymentDate}
+            isSaving={isSaving}
+            submitLabel="Save Payment"
             onClose={onClose}
-        >
-            <form onSubmit={handleSubmit} className="space-y-4">
+            onSubmit={handleSubmit}
+            setName={setName}
+            setCategory={setCategory}
+            setAmount={setAmount}
+            setFrequency={setFrequency}
+            setNextPaymentDate={setNextPaymentDate}
+        />
+    );
+}
+
+function EditPaymentModal({
+                              expense,
+                              isSaving,
+                              onClose,
+                              onSave,
+                          }: {
+    expense: RecurringExpense;
+    isSaving: boolean;
+    onClose: () => void;
+    onSave: (expense: RecurringExpense) => void;
+}) {
+    const [name, setName] = useState(expense.name);
+    const [category, setCategory] = useState(expense.category);
+    const [amount, setAmount] = useState(centsToRandInput(expense.amountInCents));
+    const [frequency, setFrequency] = useState(expense.frequency);
+    const [nextPaymentDate, setNextPaymentDate] = useState(expense.nextPaymentDate);
+
+    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        if (!name || !category || !amount || !frequency || !nextPaymentDate) return;
+
+        onSave({
+            id: expense.id,
+            name,
+            category,
+            amountInCents: randToCents(amount),
+            frequency,
+            nextPaymentDate,
+        });
+    }
+
+    return (
+        <PaymentModalForm
+            title="Edit Recurring Payment"
+            subtitle="Update this recurring payment."
+            name={name}
+            category={category}
+            amount={amount}
+            frequency={frequency}
+            nextPaymentDate={nextPaymentDate}
+            isSaving={isSaving}
+            submitLabel="Save Changes"
+            onClose={onClose}
+            onSubmit={handleSubmit}
+            setName={setName}
+            setCategory={setCategory}
+            setAmount={setAmount}
+            setFrequency={setFrequency}
+            setNextPaymentDate={setNextPaymentDate}
+        />
+    );
+}
+
+function PaymentModalForm({
+                              title,
+                              subtitle,
+                              name,
+                              category,
+                              amount,
+                              frequency,
+                              nextPaymentDate,
+                              isSaving,
+                              submitLabel,
+                              onClose,
+                              onSubmit,
+                              setName,
+                              setCategory,
+                              setAmount,
+                              setFrequency,
+                              setNextPaymentDate,
+                          }: {
+    title: string;
+    subtitle: string;
+    name: string;
+    category: string;
+    amount: string;
+    frequency: string;
+    nextPaymentDate: string;
+    isSaving: boolean;
+    submitLabel: string;
+    onClose: () => void;
+    onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+    setName: (value: string) => void;
+    setCategory: (value: string) => void;
+    setAmount: (value: string) => void;
+    setFrequency: (value: string) => void;
+    setNextPaymentDate: (value: string) => void;
+}) {
+    return (
+        <Modal title={title} subtitle={subtitle} onClose={onClose}>
+            <form onSubmit={onSubmit} className="space-y-4">
                 <ModalInput
                     label="Payment name"
                     value={name}
@@ -288,7 +506,7 @@ function AddPaymentModal({
                 </div>
 
                 <SubmitButton
-                    label={isSaving ? "Saving..." : "Save Payment"}
+                    label={isSaving ? "Saving..." : submitLabel}
                     disabled={isSaving}
                 />
             </form>
@@ -397,6 +615,10 @@ function authenticatedFetch(path: string, options: RequestInit = {}) {
 function randToCents(value: string) {
     const cleanValue = value.replace("R", "").replaceAll(",", "").trim();
     return Math.round(Number(cleanValue) * 100);
+}
+
+function centsToRandInput(amountInCents: number) {
+    return String(amountInCents / 100);
 }
 
 function formatCurrency(amountInCents: number) {
