@@ -30,6 +30,58 @@ The long-term goal is to create a modern, accessible financial management platfo
 
 ---
 
+# 💡 Financial Model
+
+MoneyMap is built around four core financial pillars:
+
+### Budget
+
+Flexible monthly spending allocations such as:
+
+* Groceries
+* Transport
+* Entertainment
+* Utilities
+* Personal spending
+
+### Recurring Expenses
+
+Fixed monthly commitments such as:
+
+* Rent
+* Insurance
+* Gym memberships
+* Streaming services
+* Mobile contracts
+
+### Goals
+
+Dedicated savings objectives such as:
+
+* Emergency Fund
+* Laptop Fund
+* University Fees
+* House Deposit
+* Holiday Savings
+
+Each goal contains:
+
+* Target amount
+* Current amount
+* Monthly contribution
+
+### Reports
+
+Reports aggregate information from Budgets, Goals, and Recurring Expenses to provide:
+
+* Financial health overview
+* Goal allocation analysis
+* Recurring expense breakdown
+* Monthly cash flow visibility
+* Savings performance tracking
+
+---
+
 # 🚀 Current Status
 
 ## Current Milestone
@@ -61,9 +113,8 @@ The application is now operating as a full-stack web application with authentica
 * Route protection
 * Budget dashboard
 * Budget backend integration
-* Goals page
-* Recurring expenses page
-* Recurring expenses backend integration
+* Goal management
+* Recurring expense management
 * Reports page
 * Settings page
 * Responsive navigation
@@ -102,11 +153,19 @@ The application is now operating as a full-stack web application with authentica
 
 ## 🚧 In Progress
 
-### Budget Enhancements
+### Budget & Goals
 
-* Budget editing workflows
-* Goal editing workflows
+* Goal progress calculations
+* Goal contribution tracking
+* Monthly savings allocation model
 * Validation improvements
+
+### Reporting
+
+* Dynamic reporting engine
+* Pie chart visualizations
+* Cash flow summaries
+* Financial health metrics
 
 ### Financial Tracking
 
@@ -114,15 +173,18 @@ The application is now operating as a full-stack web application with authentica
 * Expense categorization
 * Spending history
 
-### Reporting
-
-* Reports backend implementation
-* Financial analytics
-* Dashboard insights
-
 ---
 
 ## 📋 Planned
+
+### Reports & Analytics
+
+* Goal allocation pie charts
+* Recurring expense category pie charts
+* Monthly spending trends
+* Income versus commitments analysis
+* Emergency fund progress reporting
+* Savings performance tracking
 
 ### Core Finance Features
 
@@ -130,13 +192,6 @@ The application is now operating as a full-stack web application with authentica
 * Debt management
 * Financial health scoring
 * Monthly summaries
-
-### Insights
-
-* Spending trends
-* Financial reports
-* Savings forecasting
-* Goal performance analytics
 
 ### Platform Expansion
 
@@ -182,10 +237,10 @@ The application is now operating as a full-stack web application with authentica
                     │ Android App │
                     └──────┬──────┘
                            │
-                           │
-┌─────────────┐            ▼           ┌─────────────┐
-│  Web App    │ ─────► Backend APIs ◄──│   iOS App   │
-└─────────────┘                         └─────────────┘
+
+┌─────────────┐            ▼            ┌─────────────┐
+│   Web App   │ ─────► Backend APIs ◄── │   iOS App   │
+└─────────────┘                          └─────────────┘
                            │
                            ▼
                     ┌─────────────┐
@@ -195,123 +250,22 @@ The application is now operating as a full-stack web application with authentica
 
 ---
 
-# 🛠️ Technology Stack
+# 💵 Cash Flow Philosophy
 
-## Frontend
+MoneyMap treats income as being allocated across multiple financial responsibilities.
 
-* Next.js 16
-* React 19
-* TypeScript
-* Tailwind CSS
-
-## Backend
-
-* Kotlin
-* Micronaut
-* Java 21
-* Gradle
-
-## Database
-
-* PostgreSQL
-
-## Infrastructure
-
-* Docker
-* Docker Compose
-* Render
-* Vercel
-* GitHub
-
-## Future Technologies
-
-* Android (Kotlin)
-* iOS (Swift)
-* Push Notifications
-* Cloud Monitoring
-* Analytics
-
----
-
-# 📁 Repository Structure
+Future reporting calculations will follow:
 
 ```text
-MoneyMap/
-│
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   ├── types/
-│   └── README.md
-│
-├── backend/
-│   ├── src/
-│   ├── Dockerfile
-│   ├── docker-compose.yml
-│   ├── build.gradle.kts
-│   └── README.md
-│
-└── README.md
+Monthly Income
+- Goal Contributions
+- Recurring Expenses
+- Budget Allocations
+--------------------------------
+= Available Cash
 ```
 
----
-
-# 🚀 Getting Started
-
-## Clone Repository
-
-```bash
-git clone https://github.com/tangani/MoneyMap.git
-cd MoneyMap
-```
-
----
-
-## Run Frontend
-
-```bash
-cd frontend
-
-npm install
-npm run dev
-```
-
-Frontend:
-
-```text
-http://localhost:3000
-```
-
----
-
-## Run Backend
-
-Start PostgreSQL:
-
-```bash
-cd backend
-
-docker compose up -d
-```
-
-Run backend:
-
-```bash
-./gradlew run
-```
-
-Backend:
-
-```text
-http://localhost:8080
-```
-
-Health Check:
-
-```text
-GET /health
-```
+This approach provides a more accurate view of a user's financial position than traditional budgeting alone.
 
 ---
 
@@ -355,36 +309,42 @@ GET /health
 * [x] PostgreSQL persistence
 * [x] Create recurring expenses
 * [x] View recurring expenses
+* [x] Edit recurring expenses
+* [x] Delete recurring expenses
 
 ---
 
-## Phase 4 — Budget Enhancements 🚧
+## Phase 4 — Budget Enhancements ✅
 
 * [x] Edit budget items
 * [x] Delete budget items
 * [x] Edit budget goals
 * [x] Delete budget goals
-* [ ] Goal progress tracking
-* [ ] Validation improvements
+* [x] Edit recurring expenses
+* [x] Delete recurring expenses
 
 ---
 
-## Phase 5 — Financial Tracking
+## Phase 5 — Financial Tracking 🚧
 
+* [ ] Goal contribution tracking
+* [ ] Goal progress calculations
 * [ ] Transaction management
 * [ ] Expense categorization
 * [ ] Spending history
 * [ ] Monthly summaries
-* [ ] Debt tracking
 
 ---
 
 ## Phase 6 — Insights & Reporting
 
-* [ ] Financial reports
+* [ ] Goal allocation pie charts
+* [ ] Recurring expense pie charts
+* [ ] Budget category analysis
+* [ ] Emergency fund reporting
 * [ ] Savings analytics
-* [ ] Goal performance insights
-* [ ] Forecasting
+* [ ] Cash flow dashboard
+* [ ] Financial forecasting
 * [ ] Export functionality
 
 ---
