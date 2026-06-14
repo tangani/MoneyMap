@@ -1,30 +1,100 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
-import { useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type RecurringExpense = {
+    id: string;
     name: string;
-    amount: string;
+    category: string;
+    amountInCents: number;
     frequency: string;
-    nextDate: string;
+    nextPaymentDate: string;
 };
 
-const initialRecurringExpenses: RecurringExpense[] = [
-    { name: "Rent", amount: "R7,500", frequency: "Monthly", nextDate: "1 June" },
-    { name: "Netflix", amount: "R199", frequency: "Monthly", nextDate: "15 June" },
-    { name: "Car Insurance", amount: "R850", frequency: "Monthly", nextDate: "25 June" },
-    { name: "Gym", amount: "R350", frequency: "Monthly", nextDate: "28 June" },
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function RecurringExpensesPage() {
-    const [expenses, setExpenses] = useState(initialRecurringExpenses);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const router = useRouter();
 
-    function handleAddPayment(expense: RecurringExpense) {
-        setExpenses((currentExpenses) => [...currentExpenses, expense]);
-        setIsModalOpen(false);
+    const [expenses, setExpenses] = useState<RecurringExpense[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+
+    async function loadRecurringExpenses() {
+        try {
+            setIsLoading(true);
+            setErrorMessage("");
+
+            const response = await authenticatedFetch("/api/v1/recurring-expenses");
+
+            if (!response.ok) {
+                setErrorMessage("Could not load recurring expenses.");
+                return;
+            }
+
+            const data: RecurringExpense[] = await response.json();
+            setExpenses(data);
+        } catch (error) {
+            console.error("Recurring expenses loading failed:", error);
+            setErrorMessage("Could not connect to the server.");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        async function initialisePage() {
+            const token = localStorage.getItem("token");
+
+            if (!token) {
+                router.push("/login");
+                return;
+            }
+
+            await loadRecurringExpenses();
+        }
+
+        void initialisePage();
+    }, [router]);
+
+    async function handleAddPayment(expense: Omit<RecurringExpense, "id">) {
+        try {
+            setIsSaving(true);
+            setErrorMessage("");
+
+            const response = await authenticatedFetch("/api/v1/recurring-expenses", {
+                method: "POST",
+                body: JSON.stringify(expense),
+            });
+
+            if (!response.ok) {
+                setErrorMessage("Could not save recurring payment.");
+                return;
+            }
+
+            await loadRecurringExpenses();
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error("Add recurring payment failed:", error);
+            setErrorMessage("Could not connect to the server.");
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <AuthGuard>
+                <AppShell>
+                    <p>Loading recurring expenses...</p>
+                </AppShell>
+            </AuthGuard>
+        );
     }
 
     return (
@@ -33,6 +103,12 @@ export default function RecurringExpensesPage() {
                 <section>
                     <PageHeader />
 
+                    {errorMessage && (
+                        <p className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+                            {errorMessage}
+                        </p>
+                    )}
+
                     <UpcomingPayments
                         expenses={expenses}
                         onAddPayment={() => setIsModalOpen(true)}
@@ -40,6 +116,7 @@ export default function RecurringExpensesPage() {
 
                     {isModalOpen && (
                         <AddPaymentModal
+                            isSaving={isSaving}
                             onClose={() => setIsModalOpen(false)}
                             onAddPayment={handleAddPayment}
                         />
@@ -79,7 +156,6 @@ function UpcomingPayments({
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold">Upcoming Payments</h2>
-
                     <p className="mt-1 text-gray-600">
                         Know what is coming before it surprises you.
                     </p>
@@ -94,12 +170,13 @@ function UpcomingPayments({
             </div>
 
             <div className="space-y-4">
-                {expenses.map((expense) => (
-                    <RecurringExpenseItem
-                        key={`${expense.name}-${expense.nextDate}`}
-                        expense={expense}
-                    />
-                ))}
+                {expenses.length === 0 ? (
+                    <p className="text-gray-600">No recurring payments yet.</p>
+                ) : (
+                    expenses.map((expense) => (
+                        <RecurringExpenseItem key={expense.id} expense={expense} />
+                    ))
+                )}
             </div>
         </section>
     );
@@ -110,38 +187,47 @@ function RecurringExpenseItem({ expense }: { expense: RecurringExpense }) {
         <div className="rounded-2xl border border-gray-200 p-4">
             <div className="flex items-center justify-between">
                 <h3 className="font-semibold">{expense.name}</h3>
-                <p className="font-bold">{expense.amount}</p>
+                <p className="font-bold">{formatCurrency(expense.amountInCents)}</p>
             </div>
 
             <p className="mt-1 text-sm text-gray-500">
-                {expense.frequency} • Next payment: {expense.nextDate}
+                {formatFrequency(expense.frequency)} • Next payment:{" "}
+                {formatDate(expense.nextPaymentDate)}
+            </p>
+
+            <p className="mt-1 text-sm text-gray-500">
+                {expense.category}
             </p>
         </div>
     );
 }
 
 function AddPaymentModal({
+                             isSaving,
                              onClose,
                              onAddPayment,
                          }: {
+    isSaving: boolean;
     onClose: () => void;
-    onAddPayment: (expense: RecurringExpense) => void;
+    onAddPayment: (expense: Omit<RecurringExpense, "id">) => void;
 }) {
     const [name, setName] = useState("");
+    const [category, setCategory] = useState("");
     const [amount, setAmount] = useState("");
-    const [frequency, setFrequency] = useState("Monthly");
-    const [nextDate, setNextDate] = useState("");
+    const [frequency, setFrequency] = useState("MONTHLY");
+    const [nextPaymentDate, setNextPaymentDate] = useState("");
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!name || !amount || !frequency || !nextDate) return;
+        if (!name || !category || !amount || !frequency || !nextPaymentDate) return;
 
         onAddPayment({
             name,
-            amount: formatRandAmount(amount),
+            category,
+            amountInCents: randToCents(amount),
             frequency,
-            nextDate,
+            nextPaymentDate,
         });
     }
 
@@ -156,14 +242,21 @@ function AddPaymentModal({
                     label="Payment name"
                     value={name}
                     onChange={setName}
-                    placeholder="e.g. Internet"
+                    placeholder="e.g. Netflix"
+                />
+
+                <ModalInput
+                    label="Category"
+                    value={category}
+                    onChange={setCategory}
+                    placeholder="e.g. Entertainment"
                 />
 
                 <ModalInput
                     label="Amount"
                     value={amount}
                     onChange={setAmount}
-                    placeholder="e.g. 899"
+                    placeholder="e.g. 199"
                 />
 
                 <div>
@@ -174,21 +267,30 @@ function AddPaymentModal({
                         onChange={(event) => setFrequency(event.target.value)}
                         className="mt-2 w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                     >
-                        <option>Weekly</option>
-                        <option>Monthly</option>
-                        <option>Quarterly</option>
-                        <option>Yearly</option>
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="MONTHLY">Monthly</option>
+                        <option value="QUARTERLY">Quarterly</option>
+                        <option value="YEARLY">Yearly</option>
                     </select>
                 </div>
 
-                <ModalInput
-                    label="Next payment date"
-                    value={nextDate}
-                    onChange={setNextDate}
-                    placeholder="e.g. 1 July"
-                />
+                <div>
+                    <label className="text-sm font-medium text-gray-700">
+                        Next payment date
+                    </label>
 
-                <SubmitButton label="Save Payment" />
+                    <input
+                        type="date"
+                        value={nextPaymentDate}
+                        onChange={(event) => setNextPaymentDate(event.target.value)}
+                        className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
+                    />
+                </div>
+
+                <SubmitButton
+                    label={isSaving ? "Saving..." : "Save Payment"}
+                    disabled={isSaving}
+                />
             </form>
         </Modal>
     );
@@ -253,17 +355,65 @@ function ModalInput({
     );
 }
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({
+                          label,
+                          disabled = false,
+                      }: {
+    label: string;
+    disabled?: boolean;
+}) {
     return (
         <button
             type="submit"
-            className="w-full rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700"
+            disabled={disabled}
+            className={`w-full rounded-xl px-5 py-3 font-semibold text-white transition ${
+                disabled
+                    ? "cursor-not-allowed bg-gray-400"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
         >
             {label}
         </button>
     );
 }
 
-function formatRandAmount(value: string) {
-    return value.trim().startsWith("R") ? value.trim() : `R${value.trim()}`;
+function authenticatedFetch(path: string, options: RequestInit = {}) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        throw new Error("Missing auth token");
+    }
+
+    return fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            ...options.headers,
+        },
+    });
+}
+
+function randToCents(value: string) {
+    const cleanValue = value.replace("R", "").replaceAll(",", "").trim();
+    return Math.round(Number(cleanValue) * 100);
+}
+
+function formatCurrency(amountInCents: number) {
+    return new Intl.NumberFormat("en-ZA", {
+        style: "currency",
+        currency: "ZAR",
+    }).format(amountInCents / 100);
+}
+
+function formatFrequency(frequency: string) {
+    return frequency.charAt(0) + frequency.slice(1).toLowerCase();
+}
+
+function formatDate(value: string) {
+    return new Intl.DateTimeFormat("en-ZA", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+    }).format(new Date(value));
 }
