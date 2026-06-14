@@ -49,6 +49,8 @@ export default function BudgetPage() {
         const token = localStorage.getItem("token");
 
         if (!token) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("userId");
             router.push("/login");
             return;
         }
@@ -62,6 +64,13 @@ export default function BudgetPage() {
             setErrorMessage("");
 
             const response = await authenticatedFetch("/api/v1/budget");
+
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("userId");
+                router.push("/login");
+                return;
+            }
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -199,6 +208,51 @@ export default function BudgetPage() {
         }
     }
 
+    async function handleUpdateBudgetItem(itemId: string, request: {
+        name: string;
+        category: string;
+        amountInCents: number;
+    }) {
+        const token = localStorage.getItem("token");
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/budget/items/${itemId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(request),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to update budget item");
+        }
+
+        const updatedBudget = await response.json();
+        updateBudgetState(updatedBudget);
+    }
+
+    async function handleDeleteBudgetItem(itemId: string) {
+        try {
+            setIsSaving(true);
+            setErrorMessage("");
+
+            const response = await authenticatedFetch(`/api/v1/budget/items/${itemId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                setErrorMessage("Could not delete budget item.");
+                return;
+            }
+
+            const updatedBudget: BudgetResponse = await response.json();
+            updateBudgetState(updatedBudget);
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <AppShell>
@@ -238,6 +292,7 @@ export default function BudgetPage() {
                     <BudgetItems
                         budgetItems={budgetItems}
                         onAddItem={() => setIsItemModalOpen(true)}
+                        onDeleteItem={handleDeleteBudgetItem}
                     />
 
                     {isIncomeModalOpen && (
@@ -431,9 +486,11 @@ function BudgetGoalCard({
 function BudgetItems({
                          budgetItems,
                          onAddItem,
+                         onDeleteItem,
                      }: {
     budgetItems: BudgetItem[];
     onAddItem: () => void;
+    onDeleteItem: (itemId: string) => void;
 }) {
     return (
         <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
@@ -468,9 +525,18 @@ function BudgetItems({
                                     {item.category} · {item.type}
                                 </p>
                             </div>
-                            <p className="font-bold">
-                                {formatCurrency(item.amountInCents)}
-                            </p>
+                            <div className="flex items-center gap-4">
+                                <p className="font-bold">
+                                    {formatCurrency(item.amountInCents)}
+                                </p>
+
+                                <button
+                                    onClick={() => onDeleteItem(item.id)}
+                                    className="rounded-lg border border-red-200 px-3 py-1 text-sm font-semibold text-red-600 hover:bg-red-50"
+                                >
+                                    Delete
+                                </button>
+                            </div>
                         </div>
                     ))
                 )}
@@ -704,6 +770,17 @@ function SubmitButton({
             {label}
         </button>
     );
+}
+
+function isTokenExpired(token: string) {
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const expiryTimeInMs = payload.exp * 1000;
+
+        return Date.now() >= expiryTimeInMs;
+    } catch {
+        return true;
+    }
 }
 
 function authenticatedFetch(path: string, options: RequestInit = {}) {
