@@ -1,14 +1,21 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
-import { useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
+import { useEffect, useState } from "react";
 
 type Goal = {
+    id: string;
     name: string;
-    target: string;
-    current: string;
-    progress: string;
+    targetAmount: number;
+    currentAmount: number;
+    progressPercentage: number;
+};
+
+type GoalFormValues = {
+    name: string;
+    targetAmount: string;
+    currentAmount: string;
 };
 
 type ComparisonItem = {
@@ -17,30 +24,160 @@ type ComparisonItem = {
     highlight?: boolean;
 };
 
-const initialGoals: Goal[] = [
-    { name: "Emergency Fund", target: "R30,000", current: "R12,000", progress: "40%" },
-    { name: "Laptop Fund", target: "R70,000", current: "R18,000", progress: "26%" },
-    { name: "December Holiday", target: "R10,000", current: "R4,500", progress: "45%" },
-];
-
-const comparisonItems: ComparisonItem[] = [
-    { label: "Current monthly savings", value: "R2,000" },
-    { label: "Target monthly savings", value: "R5,000" },
-    { label: "Gap to close", value: "R3,000", highlight: true },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function GoalsPage() {
-    const [goals, setGoals] = useState(initialGoals);
-    const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState(false);
-    const [isSetGoalModalOpen, setIsSetGoalModalOpen] = useState(false);
+    const [goals, setGoals] = useState<Goal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState("");
 
-    function handleAddGoal(goal: Goal) {
-        setGoals((currentGoals) => [...currentGoals, goal]);
+    const [isAddGoalModalOpen, setIsAddGoalModalOpen] = useState(false);
+    const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+
+    const currentSavings = goals.reduce(
+        (total, goal) => total + goal.currentAmount,
+        0
+    );
+
+    const targetSavings = goals.reduce(
+        (total, goal) => total + goal.targetAmount,
+        0
+    );
+
+    const gapToClose = Math.max(targetSavings - currentSavings, 0);
+
+    const comparisonItems: ComparisonItem[] = [
+        {
+            label: "Current savings",
+            value: formatCurrency(currentSavings),
+        },
+        {
+            label: "Target savings",
+            value: formatCurrency(targetSavings),
+        },
+        {
+            label: "Gap to close",
+            value: formatCurrency(gapToClose),
+            highlight: true,
+        },
+    ];
+
+    async function fetchGoals() {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            setErrorMessage("You are not logged in.");
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            setErrorMessage("");
+            setIsLoading(true);
+
+            const response = await fetch(`${API_URL}/api/v1/goals`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to load goals.");
+            }
+
+            const data: Goal[] = await response.json();
+            setGoals(data);
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        void fetchGoals();
+    }, []);
+
+    async function handleAddGoal(values: GoalFormValues) {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/api/v1/goals`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                name: values.name,
+                targetAmount: Number(values.targetAmount),
+                currentAmount: Number(values.currentAmount),
+            }),
+        });
+
+        if (!response.ok) {
+            setErrorMessage("Failed to add goal.");
+            return;
+        }
+
+        const createdGoal: Goal = await response.json();
+        setGoals((currentGoals) => [...currentGoals, createdGoal]);
         setIsAddGoalModalOpen(false);
     }
 
-    function handleSetComparisonGoal() {
-        setIsSetGoalModalOpen(false);
+    async function handleUpdateGoal(values: GoalFormValues) {
+        if (!editingGoal) return;
+
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/api/v1/goals/${editingGoal.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                name: values.name,
+                targetAmount: Number(values.targetAmount),
+                currentAmount: Number(values.currentAmount),
+            }),
+        });
+
+        if (!response.ok) {
+            setErrorMessage("Failed to update goal.");
+            return;
+        }
+
+        const updatedGoal: Goal = await response.json();
+
+        setGoals((currentGoals) =>
+            currentGoals.map((goal) =>
+                goal.id === updatedGoal.id ? updatedGoal : goal
+            )
+        );
+
+        setEditingGoal(null);
+    }
+
+    async function handleDeleteGoal(goalId: string) {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/api/v1/goals/${goalId}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            setErrorMessage("Failed to delete goal.");
+            return;
+        }
+
+        setGoals((currentGoals) => currentGoals.filter((goal) => goal.id !== goalId));
     }
 
     return (
@@ -49,24 +186,44 @@ export default function GoalsPage() {
                 <section>
                     <PageHeader />
 
-                    <GoalComparison onSetGoal={() => setIsSetGoalModalOpen(true)} />
+                    {errorMessage && (
+                        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {errorMessage}
+                        </div>
+                    )}
+
+                    <GoalComparison comparisonItems={comparisonItems} />
 
                     <GoalsList
                         goals={goals}
+                        isLoading={isLoading}
                         onAddGoal={() => setIsAddGoalModalOpen(true)}
+                        onEditGoal={setEditingGoal}
+                        onDeleteGoal={handleDeleteGoal}
                     />
 
-                    {isSetGoalModalOpen && (
-                        <SetComparisonGoalModal
-                            onClose={() => setIsSetGoalModalOpen(false)}
-                            onSave={handleSetComparisonGoal}
+                    {isAddGoalModalOpen && (
+                        <GoalFormModal
+                            title="Add Goal"
+                            subtitle="Create a financial goal and track your progress."
+                            submitLabel="Save Goal"
+                            onClose={() => setIsAddGoalModalOpen(false)}
+                            onSubmit={handleAddGoal}
                         />
                     )}
 
-                    {isAddGoalModalOpen && (
-                        <AddGoalModal
-                            onClose={() => setIsAddGoalModalOpen(false)}
-                            onAddGoal={handleAddGoal}
+                    {editingGoal && (
+                        <GoalFormModal
+                            title="Edit Goal"
+                            subtitle="Update your goal details."
+                            submitLabel="Save Changes"
+                            initialValues={{
+                                name: editingGoal.name,
+                                targetAmount: String(editingGoal.targetAmount),
+                                currentAmount: String(editingGoal.currentAmount),
+                            }}
+                            onClose={() => setEditingGoal(null)}
+                            onSubmit={handleUpdateGoal}
                         />
                     )}
                 </section>
@@ -91,7 +248,11 @@ function PageHeader() {
     );
 }
 
-function GoalComparison({ onSetGoal }: { onSetGoal: () => void }) {
+function GoalComparison({
+                            comparisonItems,
+                        }: {
+    comparisonItems: ComparisonItem[];
+}) {
     return (
         <section className="rounded-3xl bg-white p-6 shadow-sm">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -101,13 +262,6 @@ function GoalComparison({ onSetGoal }: { onSetGoal: () => void }) {
                         See how close your current budget is to your ideal plan.
                     </p>
                 </div>
-
-                <button
-                    onClick={onSetGoal}
-                    className="w-full rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 sm:w-auto"
-                >
-                    Set Goal
-                </button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -130,10 +284,16 @@ function GoalComparison({ onSetGoal }: { onSetGoal: () => void }) {
 
 function GoalsList({
                        goals,
+                       isLoading,
                        onAddGoal,
+                       onEditGoal,
+                       onDeleteGoal,
                    }: {
     goals: Goal[];
+    isLoading: boolean;
     onAddGoal: () => void;
+    onEditGoal: (goal: Goal) => void;
+    onDeleteGoal: (goalId: string) => void;
 }) {
     return (
         <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
@@ -153,71 +313,112 @@ function GoalsList({
                 </button>
             </div>
 
-            <div className="space-y-4">
-                {goals.map((goal) => (
-                    <GoalItem key={`${goal.name}-${goal.target}`} goal={goal} />
-                ))}
-            </div>
+            {isLoading ? (
+                <p className="text-gray-600">Loading goals...</p>
+            ) : goals.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-gray-500">
+                    No goals yet. Add your first financial goal.
+                </p>
+            ) : (
+                <div className="space-y-4">
+                    {goals.map((goal) => (
+                        <GoalItem
+                            key={goal.id}
+                            goal={goal}
+                            onEdit={() => onEditGoal(goal)}
+                            onDelete={() => onDeleteGoal(goal.id)}
+                        />
+                    ))}
+                </div>
+            )}
         </section>
     );
 }
 
-function GoalItem({ goal }: { goal: Goal }) {
+function GoalItem({
+                      goal,
+                      onEdit,
+                      onDelete,
+                  }: {
+    goal: Goal;
+    onEdit: () => void;
+    onDelete: () => void;
+}) {
+    const progress = `${Math.min(goal.progressPercentage, 100)}%`;
+
     return (
         <div className="rounded-2xl border border-gray-200 p-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <h3 className="font-semibold">{goal.name}</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                        {goal.current} saved of {goal.target}
+                        {formatCurrency(goal.currentAmount)} saved of{" "}
+                        {formatCurrency(goal.targetAmount)}
                     </p>
                 </div>
 
-                <p className="font-bold text-emerald-600">{goal.progress}</p>
+                <div className="flex items-center gap-3">
+                    <p className="font-bold text-emerald-600">{progress}</p>
+
+                    <button
+                        onClick={onEdit}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                    >
+                        Edit
+                    </button>
+
+                    <button
+                        onClick={onDelete}
+                        className="rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                    >
+                        Delete
+                    </button>
+                </div>
             </div>
 
             <div className="mt-4 h-3 rounded-full bg-emerald-100">
                 <div
                     className="h-3 rounded-full bg-emerald-600"
-                    style={{ width: goal.progress }}
+                    style={{ width: progress }}
                 />
             </div>
         </div>
     );
 }
 
-function AddGoalModal({
-                          onClose,
-                          onAddGoal,
-                      }: {
+function GoalFormModal({
+                           title,
+                           subtitle,
+                           submitLabel,
+                           initialValues,
+                           onClose,
+                           onSubmit,
+                       }: {
+    title: string;
+    subtitle: string;
+    submitLabel: string;
+    initialValues?: GoalFormValues;
     onClose: () => void;
-    onAddGoal: (goal: Goal) => void;
+    onSubmit: (values: GoalFormValues) => void;
 }) {
-    const [name, setName] = useState("");
-    const [target, setTarget] = useState("");
-    const [current, setCurrent] = useState("");
+    const [name, setName] = useState(initialValues?.name ?? "");
+    const [targetAmount, setTargetAmount] = useState(initialValues?.targetAmount ?? "");
+    const [currentAmount, setCurrentAmount] = useState(initialValues?.currentAmount ?? "");
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!name || !target || !current) return;
+        if (!name || !targetAmount || !currentAmount) return;
 
-        const progress = calculateProgress(current, target);
-
-        onAddGoal({
+        onSubmit({
             name,
-            target: formatRandAmount(target),
-            current: formatRandAmount(current),
-            progress,
+            targetAmount,
+            currentAmount,
         });
     }
 
     return (
-        <Modal
-            title="Add Goal"
-            subtitle="Create a financial goal and track your progress."
-            onClose={onClose}
-        >
+        <Modal title={title} subtitle={subtitle} onClose={onClose}>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <ModalInput
                     label="Goal name"
@@ -228,40 +429,47 @@ function AddGoalModal({
 
                 <ModalInput
                     label="Target amount"
-                    value={target}
-                    onChange={setTarget}
+                    value={targetAmount}
+                    onChange={setTargetAmount}
                     placeholder="e.g. 30000"
                 />
 
                 <ModalInput
                     label="Current amount"
-                    value={current}
-                    onChange={setCurrent}
+                    value={currentAmount}
+                    onChange={setCurrentAmount}
                     placeholder="e.g. 12000"
                 />
 
-                <SubmitButton label="Save Goal" />
+                <SubmitButton label={submitLabel} />
             </form>
         </Modal>
     );
 }
 
 function SetComparisonGoalModal({
+                                    currentSavings,
+                                    targetSavings,
                                     onClose,
                                     onSave,
                                 }: {
+    currentSavings: string;
+    targetSavings: string;
     onClose: () => void;
-    onSave: () => void;
+    onSave: (values: { currentSavings: string; targetSavings: string }) => void;
 }) {
-    const [currentSavings, setCurrentSavings] = useState("2000");
-    const [targetSavings, setTargetSavings] = useState("5000");
+    const [currentSavingsValue, setCurrentSavingsValue] = useState(currentSavings);
+    const [targetSavingsValue, setTargetSavingsValue] = useState(targetSavings);
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!currentSavings || !targetSavings) return;
+        if (!currentSavingsValue || !targetSavingsValue) return;
 
-        onSave();
+        onSave({
+            currentSavings: currentSavingsValue,
+            targetSavings: targetSavingsValue,
+        });
     }
 
     return (
@@ -273,15 +481,15 @@ function SetComparisonGoalModal({
             <form onSubmit={handleSubmit} className="space-y-4">
                 <ModalInput
                     label="Current monthly savings"
-                    value={currentSavings}
-                    onChange={setCurrentSavings}
+                    value={currentSavingsValue}
+                    onChange={setCurrentSavingsValue}
                     placeholder="e.g. 2000"
                 />
 
                 <ModalInput
                     label="Target monthly savings"
-                    value={targetSavings}
-                    onChange={setTargetSavings}
+                    value={targetSavingsValue}
+                    onChange={setTargetSavingsValue}
                     placeholder="e.g. 5000"
                 />
 
@@ -330,20 +538,25 @@ function ModalInput({
                         value,
                         onChange,
                         placeholder,
+                        type = "text",
                     }: {
     label: string;
     value: string;
     onChange: (value: string) => void;
     placeholder: string;
+    type?: string;
 }) {
     return (
         <div>
-            <label className="text-sm font-medium text-gray-700">{label}</label>
+            <label className="text-sm font-medium text-gray-700">
+                {label}
+            </label>
 
             <input
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
                 placeholder={placeholder}
+                type={type}
                 className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
             />
         </div>
@@ -361,21 +574,10 @@ function SubmitButton({ label }: { label: string }) {
     );
 }
 
-function formatRandAmount(value: string) {
-    return value.trim().startsWith("R") ? value.trim() : `R${value.trim()}`;
-}
-
-function parseAmount(value: string) {
-    return Number(value.replace("R", "").replace(",", "").trim());
-}
-
-function calculateProgress(current: string, target: string) {
-    const currentAmount = parseAmount(current);
-    const targetAmount = parseAmount(target);
-
-    if (!currentAmount || !targetAmount) return "0%";
-
-    const percentage = Math.min((currentAmount / targetAmount) * 100, 100);
-
-    return `${Math.round(percentage)}%`;
+function formatCurrency(value: number) {
+    return new Intl.NumberFormat("en-ZA", {
+        style: "currency",
+        currency: "ZAR",
+        maximumFractionDigits: 0,
+    }).format(value);
 }
