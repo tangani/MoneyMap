@@ -32,6 +32,24 @@ The long-term goal is to create a modern, accessible financial management platfo
 
 # 🚀 Current Status
 
+## Current Milestone
+
+MoneyMap currently supports:
+
+* User signup
+* User login
+* JWT authentication
+* Protected application routes
+* Budget management
+* Budget goals
+* Recurring expense tracking
+* PostgreSQL persistence
+* Frontend and backend production deployments
+
+The application is now operating as a full-stack web application with authenticated users, persistent data storage, and production hosting.
+
+---
+
 ## ✅ Completed
 
 ### Frontend
@@ -39,20 +57,35 @@ The long-term goal is to create a modern, accessible financial management platfo
 * Landing page
 * Signup page
 * Login page
+* JWT session handling
+* Route protection
 * Budget dashboard
+* Budget backend integration
 * Goals page
 * Recurring expenses page
+* Recurring expenses backend integration
 * Reports page
 * Settings page
 * Responsive navigation
+* Mobile bottom navigation
 
 ### Backend
 
 * Micronaut project setup
 * Docker support
 * PostgreSQL configuration
+* Flyway migrations
 * User signup API
 * User login API
+* Password hashing
+* JWT generation
+* JWT-protected APIs
+* Budget APIs
+* Budget persistence
+* Budget item persistence
+* Budget goal persistence
+* Recurring expense APIs
+* Recurring expense persistence
 * Request validation
 * API serialization
 
@@ -60,30 +93,32 @@ The long-term goal is to create a modern, accessible financial management platfo
 
 * GitHub repositories
 * Docker development environment
-* Backend deployment
-* Frontend deployment preparation
+* PostgreSQL containerized development environment
+* Backend deployment (Render)
+* Frontend deployment (Vercel)
+* Environment variable configuration
 
 ---
 
 ## 🚧 In Progress
 
-### Authentication
+### Budget Enhancements
 
-* Password hashing
-* Session management
-* JWT authentication
+* Budget editing workflows
+* Goal editing workflows
+* Validation improvements
 
-### Persistence
+### Financial Tracking
 
-* User persistence
-* Budget persistence
-* Goal persistence
+* Transaction management
+* Expense categorization
+* Spending history
 
-### API Development
+### Reporting
 
-* Budget APIs
-* Goal APIs
-* Recurring expense APIs
+* Reports backend implementation
+* Financial analytics
+* Dashboard insights
 
 ---
 
@@ -92,9 +127,9 @@ The long-term goal is to create a modern, accessible financial management platfo
 ### Core Finance Features
 
 * Transaction tracking
-* Expense categorization
 * Debt management
-* Budget analytics
+* Financial health scoring
+* Monthly summaries
 
 ### Insights
 
@@ -116,6 +151,7 @@ The long-term goal is to create a modern, accessible financial management platfo
 * Open Banking APIs
 * AI-powered budgeting assistance
 * Financial forecasting
+* Personalized recommendations
 
 ---
 
@@ -184,6 +220,7 @@ The long-term goal is to create a modern, accessible financial management platfo
 * Docker
 * Docker Compose
 * Render
+* Vercel
 * GitHub
 
 ## Future Technologies
@@ -288,8 +325,12 @@ GET /health
 * [x] Docker development environment
 * [x] PostgreSQL integration
 * [x] User authentication
+* [x] Password hashing
 * [x] JWT authentication
+* [x] Route protection
 * [x] Frontend ↔ Backend integration
+* [x] Backend deployment
+* [x] Frontend deployment
 
 ---
 
@@ -301,25 +342,30 @@ GET /health
 * [x] Budget goal management
 * [x] Database persistence
 * [x] Refresh-safe user data
+* [x] JWT-secured budget APIs
 
 ---
 
-## Phase 3 — Budget Enhancements 🚧
+## Phase 3 — Recurring Expenses ✅
+
+* [x] Recurring expense persistence
+* [x] Recurring expense APIs
+* [x] Frontend integration
+* [x] JWT-secured endpoints
+* [x] PostgreSQL persistence
+* [x] Create recurring expenses
+* [x] View recurring expenses
+
+---
+
+## Phase 4 — Budget Enhancements 🚧
 
 * [ ] Edit budget items
 * [ ] Delete budget items
 * [ ] Edit budget goals
+* [ ] Delete budget goals
 * [ ] Goal progress tracking
 * [ ] Validation improvements
-
----
-
-## Phase 4 — Recurring Expenses
-
-* [ ] Recurring expense persistence
-* [ ] Recurring expense APIs
-* [ ] Frontend integration
-* [ ] Monthly automation
 
 ---
 
@@ -345,8 +391,8 @@ GET /health
 
 ## Phase 7 — Mobile Applications
 
-* [ ] Android application
-* [ ] iOS application
+* [ ] Android application (Kotlin)
+* [ ] iOS application (Swift)
 * [ ] Push notifications
 * [ ] Offline support
 
