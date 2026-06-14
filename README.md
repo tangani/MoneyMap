@@ -360,10 +360,10 @@ GET /health
 
 ## Phase 4 — Budget Enhancements 🚧
 
-* [ ] Edit budget items
-* [ ] Delete budget items
-* [ ] Edit budget goals
-* [ ] Delete budget goals
+* [x] Edit budget items
+* [x] Delete budget items
+* [x] Edit budget goals
+* [x] Delete budget goals
 * [ ] Goal progress tracking
 * [ ] Validation improvements
 
