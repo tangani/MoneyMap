@@ -163,6 +163,102 @@ class BudgetService(
         return getBudget(userId)
     }
 
+    fun updateBudgetItem(
+        userId: UUID,
+        itemId: UUID,
+        request: UpdateBudgetItemRequest,
+    ): BudgetResponse {
+        val budget = budgetRepository.findByUserId(userId)
+            ?: return getBudget(userId)
+
+        val existingItem = budgetItemRepository.findById(itemId).orElse(null)
+            ?: return getBudget(userId)
+
+        if (existingItem.budgetId != budget.id) {
+            return getBudget(userId)
+        }
+
+        val now = LocalDateTime.now()
+
+        budgetItemRepository.update(
+            existingItem.copy(
+                name = request.name.trim(),
+                category = request.category.trim(),
+                amount = fromCents(request.amountInCents),
+                updatedAt = now,
+            )
+        )
+
+        return getBudget(userId)
+    }
+
+    fun deleteBudgetItem(
+        userId: UUID,
+        itemId: UUID,
+    ): BudgetResponse {
+        val budget = budgetRepository.findByUserId(userId)
+            ?: return getBudget(userId)
+
+        val existingItem = budgetItemRepository.findById(itemId).orElse(null)
+            ?: return getBudget(userId)
+
+        if (existingItem.budgetId != budget.id) {
+            return getBudget(userId)
+        }
+
+        budgetItemRepository.delete(existingItem)
+
+        return getBudget(userId)
+    }
+
+    fun updateBudgetGoal(
+        userId: UUID,
+        goalId: UUID,
+        request: UpdateBudgetGoalRequest,
+    ): BudgetResponse {
+        val budget = budgetRepository.findByUserId(userId)
+            ?: return getBudget(userId)
+
+        val existingGoal = budgetGoalRepository.findById(goalId).orElse(null)
+            ?: return getBudget(userId)
+
+        if (existingGoal.budgetId != budget.id) {
+            return getBudget(userId)
+        }
+
+        val now = LocalDateTime.now()
+
+        budgetGoalRepository.update(
+            existingGoal.copy(
+                name = request.name.trim(),
+                targetAmount = fromCents(request.targetAmountInCents),
+                monthlyContribution = fromCents(request.monthlyContributionInCents),
+                updatedAt = now,
+            )
+        )
+
+        return getBudget(userId)
+    }
+
+    fun deleteBudgetGoal(
+        userId: UUID,
+        goalId: UUID,
+    ): BudgetResponse {
+        val budget = budgetRepository.findByUserId(userId)
+            ?: return getBudget(userId)
+
+        val existingGoal = budgetGoalRepository.findById(goalId).orElse(null)
+            ?: return getBudget(userId)
+
+        if (existingGoal.budgetId != budget.id) {
+            return getBudget(userId)
+        }
+
+        budgetGoalRepository.delete(existingGoal)
+
+        return getBudget(userId)
+    }
+
     private fun getOrCreateBudget(userId: UUID): Budget {
         return budgetRepository.findByUserId(userId)
             ?: createEmptyBudget(userId)

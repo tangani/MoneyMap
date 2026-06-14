@@ -4,6 +4,8 @@ import com.moneymap.models.BudgetResponse
 import com.moneymap.models.CreateBudgetGoalRequest
 import com.moneymap.models.CreateBudgetItemRequest
 import com.moneymap.models.CreateBudgetRequest
+import com.moneymap.models.UpdateBudgetGoalRequest
+import com.moneymap.models.UpdateBudgetItemRequest
 import com.moneymap.models.UpdateMonthlyIncomeRequest
 import com.moneymap.services.BudgetService
 import io.micronaut.http.annotation.Body
@@ -14,6 +16,7 @@ import io.micronaut.http.annotation.Put
 import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.Authentication
 import io.micronaut.security.rules.SecurityRule
+import io.micronaut.http.annotation.Delete
 import java.util.UUID
 
 @Controller("/api/v1/budget")
@@ -70,5 +73,47 @@ class BudgetController(
 
     private fun getUserId(authentication: Authentication): UUID {
         return UUID.fromString(authentication.attributes["userId"].toString())
+    }
+
+    @Put("/items/{itemId}")
+    fun updateBudgetItem(
+        authentication: Authentication,
+        itemId: UUID,
+        @Body request: UpdateBudgetItemRequest,
+    ): BudgetResponse {
+        val userId = getUserId(authentication)
+
+        return budgetService.updateBudgetItem(userId, itemId, request)
+    }
+
+    @Delete("/items/{itemId}")
+    fun deleteBudgetItem(
+        authentication: Authentication,
+        itemId: UUID,
+    ): BudgetResponse {
+        val userId = getUserId(authentication)
+
+        return budgetService.deleteBudgetItem(userId, itemId)
+    }
+
+    @Put("/goals/{goalId}")
+    fun updateBudgetGoal(
+        authentication: Authentication,
+        goalId: UUID,
+        @Body request: UpdateBudgetGoalRequest,
+    ): BudgetResponse {
+        val userId = getUserId(authentication)
+
+        return budgetService.updateBudgetGoal(userId, goalId, request)
+    }
+
+    @Delete("/goals/{goalId}")
+    fun deleteBudgetGoal(
+        authentication: Authentication,
+        goalId: UUID,
+    ): BudgetResponse {
+        val userId = getUserId(authentication)
+
+        return budgetService.deleteBudgetGoal(userId, goalId)
     }
 }
