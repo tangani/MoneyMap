@@ -19,6 +19,23 @@ micronaut:
             - Authorization
   security:
     enabled: true
+    intercept-url-map:
+      - pattern: /api/v1/auth/**
+        access:
+          - isAnonymous()
+
+      - pattern: /api/v1/budget/**
+        access:
+          - isAuthenticated()
+
+      - pattern: /api/v1/recurring-expenses
+        access:
+          - isAuthenticated()
+
+      - pattern: /api/v1/recurring-expenses/**
+        access:
+          - isAuthenticated()
+
     token:
       jwt:
         enabled: true
