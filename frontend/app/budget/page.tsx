@@ -1,9 +1,9 @@
 "use client";
 
 import AppShell from "@/components/AppShell";
-import { useEffect, useMemo, useState } from "react";
-import {useRouter} from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 const API_BASE_URL = "https://moneymap-backend-l90f.onrender.com";
 
@@ -32,10 +32,11 @@ type BudgetResponse = {
 };
 
 export default function BudgetPage() {
+    const router = useRouter();
+
     const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-    const router = useRouter();
 
     const [monthlyIncomeInCents, setMonthlyIncomeInCents] = useState(0);
     const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
@@ -44,6 +45,7 @@ export default function BudgetPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
+    const [editingBudgetItemId, setEditingBudgetItemId] = useState<string | null>(null);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -97,7 +99,12 @@ export default function BudgetPage() {
 
     const plannedExpensesInCents = useMemo(() => {
         return budgetItems
-            .filter((item) => item.type === "EXPENSE" || item.type === "SAVING" || item.type === "DEBT")
+            .filter(
+                (item) =>
+                    item.type === "EXPENSE" ||
+                    item.type === "SAVING" ||
+                    item.type === "DEBT"
+            )
             .reduce((total, item) => total + item.amountInCents, 0);
     }, [budgetItems]);
 
@@ -133,42 +140,68 @@ export default function BudgetPage() {
         }
     }
 
-    async function handleAddItem(item: Omit<BudgetItem, "id">) {
+    async function handleSaveItem(item: Omit<BudgetItem, "id">) {
         try {
             setIsSaving(true);
             setErrorMessage("");
 
-            const response = await authenticatedFetch("/api/v1/budget/items", {
-                method: "POST",
-                body: JSON.stringify({
-                    name: item.name,
-                    category: item.category,
-                    type: item.type,
-                    amountInCents: item.amountInCents,
-                }),
-            });
+            const isEditing = editingBudgetItemId !== null;
+
+            const response = await authenticatedFetch(
+                isEditing
+                    ? `/api/v1/budget/items/${editingBudgetItemId}`
+                    : "/api/v1/budget/items",
+                {
+                    method: isEditing ? "PUT" : "POST",
+                    body: JSON.stringify({
+                        name: item.name,
+                        category: item.category,
+                        type: item.type,
+                        amountInCents: item.amountInCents,
+                    }),
+                }
+            );
 
             if (!response.ok) {
                 const errorText = await response.text();
-
-                console.error(
-                    "Add item failed:",
-                    response.status,
-                    errorText
-                );
-
-                setErrorMessage(
-                    `Add item failed (${response.status}): ${errorText}`
-                );
-
+                console.error("Save item failed:", response.status, errorText);
+                setErrorMessage(`Save item failed (${response.status}): ${errorText}`);
                 return;
             }
 
             const updatedBudget: BudgetResponse = await response.json();
             updateBudgetState(updatedBudget);
+
+            setEditingBudgetItemId(null);
             setIsItemModalOpen(false);
         } catch (error) {
-            console.error("Add item failed:", error);
+            console.error("Save item failed:", error);
+            setErrorMessage("Could not connect to the server.");
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    async function handleDeleteBudgetItem(itemId: string) {
+        try {
+            setIsSaving(true);
+            setErrorMessage("");
+
+            const response = await authenticatedFetch(`/api/v1/budget/items/${itemId}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("Delete item failed:", response.status, errorText);
+                setErrorMessage("Could not delete budget item.");
+                return;
+            }
+
+            const updatedBudget: BudgetResponse = await response.json();
+            updateBudgetState(updatedBudget);
+        } catch (error) {
+            console.error("Delete item failed:", error);
             setErrorMessage("Could not connect to the server.");
         } finally {
             setIsSaving(false);
@@ -208,50 +241,24 @@ export default function BudgetPage() {
         }
     }
 
-    async function handleUpdateBudgetItem(itemId: string, request: {
-        name: string;
-        category: string;
-        amountInCents: number;
-    }) {
-        const token = localStorage.getItem("token");
-
-        const response = await fetch(`${API_BASE_URL}/api/v1/budget/items/${itemId}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(request),
-        });
-
-        if (!response.ok) {
-            throw new Error("Failed to update budget item");
-        }
-
-        const updatedBudget = await response.json();
-        updateBudgetState(updatedBudget);
+    function handleOpenAddItemModal() {
+        setEditingBudgetItemId(null);
+        setIsItemModalOpen(true);
     }
 
-    async function handleDeleteBudgetItem(itemId: string) {
-        try {
-            setIsSaving(true);
-            setErrorMessage("");
-
-            const response = await authenticatedFetch(`/api/v1/budget/items/${itemId}`, {
-                method: "DELETE",
-            });
-
-            if (!response.ok) {
-                setErrorMessage("Could not delete budget item.");
-                return;
-            }
-
-            const updatedBudget: BudgetResponse = await response.json();
-            updateBudgetState(updatedBudget);
-        } finally {
-            setIsSaving(false);
-        }
+    function handleEditBudgetItem(item: BudgetItem) {
+        setEditingBudgetItemId(item.id);
+        setIsItemModalOpen(true);
     }
+
+    function handleCloseItemModal() {
+        setEditingBudgetItemId(null);
+        setIsItemModalOpen(false);
+    }
+
+    const editingBudgetItem = editingBudgetItemId
+        ? budgetItems.find((item) => item.id === editingBudgetItemId) ?? null
+        : null;
 
     if (isLoading) {
         return (
@@ -291,7 +298,8 @@ export default function BudgetPage() {
 
                     <BudgetItems
                         budgetItems={budgetItems}
-                        onAddItem={() => setIsItemModalOpen(true)}
+                        onAddItem={handleOpenAddItemModal}
+                        onEditItem={handleEditBudgetItem}
                         onDeleteItem={handleDeleteBudgetItem}
                     />
 
@@ -305,10 +313,11 @@ export default function BudgetPage() {
                     )}
 
                     {isItemModalOpen && (
-                        <AddBudgetItemModal
+                        <BudgetItemModal
                             isSaving={isSaving}
-                            onClose={() => setIsItemModalOpen(false)}
-                            onAddItem={handleAddItem}
+                            initialItem={editingBudgetItem}
+                            onClose={handleCloseItemModal}
+                            onSaveItem={handleSaveItem}
                         />
                     )}
 
@@ -420,6 +429,7 @@ function EmptyGoalCard({ onSetGoal }: { onSetGoal: () => void }) {
             <p className="mt-2 text-gray-600">
                 Create your first budget goal to start tracking your progress.
             </p>
+
             <button
                 onClick={onSetGoal}
                 className="mt-5 rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700"
@@ -441,7 +451,9 @@ function BudgetGoalCard({
         goal.targetAmountInCents > 0
             ? Math.min(
                 100,
-                Math.round((goal.currentAmountInCents / goal.targetAmountInCents) * 100)
+                Math.round(
+                    (goal.currentAmountInCents / goal.targetAmountInCents) * 100
+                )
             )
             : 0;
 
@@ -472,6 +484,7 @@ function BudgetGoalCard({
                     <span>Current: {formatCurrency(goal.currentAmountInCents)}</span>
                     <span>Target: {formatCurrency(goal.targetAmountInCents)}</span>
                 </div>
+
                 <div className="h-3 rounded-full bg-emerald-100">
                     <div
                         className="h-3 rounded-full bg-emerald-600"
@@ -486,10 +499,12 @@ function BudgetGoalCard({
 function BudgetItems({
                          budgetItems,
                          onAddItem,
+                         onEditItem,
                          onDeleteItem,
                      }: {
     budgetItems: BudgetItem[];
     onAddItem: () => void;
+    onEditItem: (item: BudgetItem) => void;
     onDeleteItem: (itemId: string) => void;
 }) {
     return (
@@ -525,10 +540,18 @@ function BudgetItems({
                                     {item.category} · {item.type}
                                 </p>
                             </div>
+
                             <div className="flex items-center gap-4">
                                 <p className="font-bold">
                                     {formatCurrency(item.amountInCents)}
                                 </p>
+
+                                <button
+                                    onClick={() => onEditItem(item)}
+                                    className="rounded-lg border border-emerald-600 px-3 py-1 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                                >
+                                    Edit
+                                </button>
 
                                 <button
                                     onClick={() => onDeleteItem(item.id)}
@@ -561,7 +584,7 @@ function EditIncomeModal({
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!amount) return;
+        if (!amount.trim()) return;
 
         onSave(randToCents(amount));
     }
@@ -580,55 +603,92 @@ function EditIncomeModal({
                     placeholder="e.g. 48000"
                 />
 
-                <SubmitButton label={isSaving ? "Saving..." : "Save Income"} disabled={isSaving} />
+                <SubmitButton
+                    label={isSaving ? "Saving..." : "Save Income"}
+                    disabled={isSaving}
+                />
             </form>
         </Modal>
     );
 }
 
-function AddBudgetItemModal({
-                                isSaving,
-                                onClose,
-                                onAddItem,
-                            }: {
+function BudgetItemModal({
+                             isSaving,
+                             initialItem,
+                             onClose,
+                             onSaveItem,
+                         }: {
     isSaving: boolean;
+    initialItem?: BudgetItem | null;
     onClose: () => void;
-    onAddItem: (item: Omit<BudgetItem, "id">) => void;
+    onSaveItem: (item: Omit<BudgetItem, "id">) => void;
 }) {
-    const [name, setName] = useState("");
-    const [amount, setAmount] = useState("");
-    const [category, setCategory] = useState("");
-    const [type, setType] = useState<BudgetItemType>("EXPENSE");
+    const isEditing = Boolean(initialItem);
+
+    const [name, setName] = useState(initialItem?.name ?? "");
+    const [amount, setAmount] = useState(
+        initialItem ? centsToRandInput(initialItem.amountInCents) : ""
+    );
+    const [category, setCategory] = useState(initialItem?.category ?? "");
+    const [type, setType] = useState<BudgetItemType>(
+        initialItem?.type ?? "EXPENSE"
+    );
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!name || !amount || !category) return;
+        if (!name.trim() || !amount.trim() || !category.trim()) return;
 
-        onAddItem({
-            name,
+        onSaveItem({
+            name: name.trim(),
             amountInCents: randToCents(amount),
-            category,
+            category: category.trim(),
             type,
         });
     }
 
     return (
         <Modal
-            title="Add Budget Item"
-            subtitle="Add a planned expense, saving, debt, or income item."
+            title={isEditing ? "Edit Budget Item" : "Add Budget Item"}
+            subtitle={
+                isEditing
+                    ? "Update this planned budget item."
+                    : "Add a planned expense, saving, debt, or income item."
+            }
             onClose={onClose}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <ModalInput label="Name" value={name} onChange={setName} placeholder="e.g. Internet" />
-                <ModalInput label="Amount" value={amount} onChange={setAmount} placeholder="e.g. 899" />
-                <ModalInput label="Category" value={category} onChange={setCategory} placeholder="e.g. Bills" />
+                <ModalInput
+                    label="Name"
+                    value={name}
+                    onChange={setName}
+                    placeholder="e.g. Internet"
+                />
+
+                <ModalInput
+                    label="Amount"
+                    value={amount}
+                    onChange={setAmount}
+                    placeholder="e.g. 899"
+                />
+
+                <ModalInput
+                    label="Category"
+                    value={category}
+                    onChange={setCategory}
+                    placeholder="e.g. Bills"
+                />
 
                 <div>
-                    <label className="text-sm font-medium text-gray-700">Type</label>
+                    <label className="text-sm font-medium text-gray-700">
+                        Type
+                    </label>
+
                     <select
                         value={type}
-                        onChange={(event) => setType(event.target.value as BudgetItemType)}
+                        onChange={(event) =>
+                            setType(event.target.value as BudgetItemType)
+                        }
                         className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                     >
                         <option value="EXPENSE">Expense</option>
@@ -638,7 +698,16 @@ function AddBudgetItemModal({
                     </select>
                 </div>
 
-                <SubmitButton label={isSaving ? "Saving..." : "Save Item"} disabled={isSaving} />
+                <SubmitButton
+                    label={
+                        isSaving
+                            ? "Saving..."
+                            : isEditing
+                                ? "Save Changes"
+                                : "Save Item"
+                    }
+                    disabled={isSaving}
+                />
             </form>
         </Modal>
     );
@@ -656,18 +725,26 @@ function SetGoalModal({
     onSetGoal: (goal: BudgetGoal) => void;
 }) {
     const [goalName, setGoalName] = useState(initialGoal.name);
-    const [targetAmount, setTargetAmount] = useState(centsToRandInput(initialGoal.targetAmountInCents));
-    const [currentAmount, setCurrentAmount] = useState(centsToRandInput(initialGoal.currentAmountInCents));
-    const [monthlyContribution, setMonthlyContribution] = useState(centsToRandInput(initialGoal.monthlyContributionInCents));
+    const [targetAmount, setTargetAmount] = useState(
+        centsToRandInput(initialGoal.targetAmountInCents)
+    );
+    const [currentAmount, setCurrentAmount] = useState(
+        centsToRandInput(initialGoal.currentAmountInCents)
+    );
+    const [monthlyContribution, setMonthlyContribution] = useState(
+        centsToRandInput(initialGoal.monthlyContributionInCents)
+    );
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!goalName || !targetAmount || !monthlyContribution) return;
+        if (!goalName.trim() || !targetAmount.trim() || !monthlyContribution.trim()) {
+            return;
+        }
 
         onSetGoal({
             id: initialGoal.id,
-            name: goalName,
+            name: goalName.trim(),
             targetAmountInCents: randToCents(targetAmount),
             currentAmountInCents: randToCents(currentAmount || "0"),
             monthlyContributionInCents: randToCents(monthlyContribution),
@@ -681,12 +758,38 @@ function SetGoalModal({
             onClose={onClose}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <ModalInput label="Goal name" value={goalName} onChange={setGoalName} placeholder="e.g. Emergency Fund" />
-                <ModalInput label="Target amount" value={targetAmount} onChange={setTargetAmount} placeholder="e.g. 5000" />
-                <ModalInput label="Current amount" value={currentAmount} onChange={setCurrentAmount} placeholder="e.g. 2000" />
-                <ModalInput label="Monthly contribution" value={monthlyContribution} onChange={setMonthlyContribution} placeholder="e.g. 1000" />
+                <ModalInput
+                    label="Goal name"
+                    value={goalName}
+                    onChange={setGoalName}
+                    placeholder="e.g. Emergency Fund"
+                />
 
-                <SubmitButton label={isSaving ? "Saving..." : "Save Goal"} disabled={isSaving} />
+                <ModalInput
+                    label="Target amount"
+                    value={targetAmount}
+                    onChange={setTargetAmount}
+                    placeholder="e.g. 5000"
+                />
+
+                <ModalInput
+                    label="Current amount"
+                    value={currentAmount}
+                    onChange={setCurrentAmount}
+                    placeholder="e.g. 2000"
+                />
+
+                <ModalInput
+                    label="Monthly contribution"
+                    value={monthlyContribution}
+                    onChange={setMonthlyContribution}
+                    placeholder="e.g. 1000"
+                />
+
+                <SubmitButton
+                    label={isSaving ? "Saving..." : "Save Goal"}
+                    disabled={isSaving}
+                />
             </form>
         </Modal>
     );
@@ -740,6 +843,7 @@ function ModalInput({
     return (
         <div>
             <label className="text-sm font-medium text-gray-700">{label}</label>
+
             <input
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
@@ -770,17 +874,6 @@ function SubmitButton({
             {label}
         </button>
     );
-}
-
-function isTokenExpired(token: string) {
-    try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const expiryTimeInMs = payload.exp * 1000;
-
-        return Date.now() >= expiryTimeInMs;
-    } catch {
-        return true;
-    }
 }
 
 function authenticatedFetch(path: string, options: RequestInit = {}) {
