@@ -9,4 +9,6 @@ import java.util.UUID
 @JdbcRepository(dialect = Dialect.POSTGRES)
 interface UserRepository : CrudRepository<User, UUID> {
     fun findByEmail(email: String): User?
+
+    fun existsByEmail(email: String): Boolean
 }
