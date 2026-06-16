@@ -2,8 +2,8 @@
 
 import AppShell from "@/components/AppShell";
 import AuthGuard from "@/components/AuthGuard";
-import { useEffect, useMemo, useState } from "react";
 import { authenticatedFetch } from "@/lib/authenticatedFetch";
+import { useEffect, useMemo, useState } from "react";
 
 type BudgetItem = {
     id: string;
@@ -49,6 +49,19 @@ type CategoryBreakdown = {
     percentage: number;
 };
 
+type ReportData = {
+    monthlyIncomeInCents: number;
+    expensesInCents: number;
+    savingsAllocationInCents: number;
+    remainingCashInCents: number;
+    savingsRateLabel: string;
+    spendingBreakdown: CategoryBreakdown[];
+    goalTargetTotal: number;
+    goalCurrentTotal: number;
+    goalGap: number;
+    insights: string[];
+};
+
 export default function ReportsPage() {
     const [budget, setBudget] = useState<BudgetResponse | null>(null);
     const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
@@ -74,13 +87,9 @@ export default function ReportsPage() {
                     return;
                 }
 
-                const budgetData: BudgetResponse = await budgetResponse.json();
-                const recurringData: RecurringExpense[] = await recurringResponse.json();
-                const goalsData: Goal[] = await goalsResponse.json();
-
-                setBudget(budgetData);
-                setRecurringExpenses(recurringData);
-                setGoals(goalsData);
+                setBudget(await budgetResponse.json());
+                setRecurringExpenses(await recurringResponse.json());
+                setGoals(await goalsResponse.json());
             } finally {
                 setIsLoading(false);
             }
@@ -89,7 +98,7 @@ export default function ReportsPage() {
         loadReportsData();
     }, []);
 
-    const report = useMemo(() => {
+    const report: ReportData = useMemo(() => {
         const monthlyIncomeInCents = budget?.monthlyIncomeInCents ?? 0;
 
         const budgetItemsTotalInCents =
@@ -108,10 +117,10 @@ export default function ReportsPage() {
         const remainingCashInCents =
             monthlyIncomeInCents - expensesInCents - savingsAllocationInCents;
 
-        const savingsRate =
-            monthlyIncomeInCents > 0
-                ? Math.round((savingsAllocationInCents / monthlyIncomeInCents) * 100)
-                : 0;
+        const savingsRateLabel = formatSavingsRate(
+            savingsAllocationInCents,
+            monthlyIncomeInCents
+        );
 
         const goalTargetTotal = goals.reduce(
             (total, goal) => total + goal.targetAmount,
@@ -123,27 +132,19 @@ export default function ReportsPage() {
             0
         );
 
-        const goalGap = goalTargetTotal - goalCurrentTotal;
+        const goalGap = Math.max(goalTargetTotal - goalCurrentTotal, 0);
 
         const categoryTotals = new Map<string, number>();
 
         budget?.items.forEach((item) => {
-            categoryTotals.set(
-                item.category,
-                (categoryTotals.get(item.category) ?? 0) + item.amountInCents
-            );
+            addToCategoryTotal(categoryTotals, item.category, item.amountInCents);
         });
 
         recurringExpenses.forEach((expense) => {
-            categoryTotals.set(
-                expense.category,
-                (categoryTotals.get(expense.category) ?? 0) + expense.amountInCents
-            );
+            addToCategoryTotal(categoryTotals, expense.category, expense.amountInCents);
         });
 
-        const spendingBreakdown: CategoryBreakdown[] = Array.from(
-            categoryTotals.entries()
-        )
+        const spendingBreakdown = Array.from(categoryTotals.entries())
             .map(([name, amountInCents]) => ({
                 name,
                 amountInCents,
@@ -154,15 +155,13 @@ export default function ReportsPage() {
             }))
             .sort((a, b) => b.amountInCents - a.amountInCents);
 
-        const largestCategory = spendingBreakdown[0];
-
         const insights = buildInsights({
             monthlyIncomeInCents,
             expensesInCents,
             savingsAllocationInCents,
             remainingCashInCents,
-            savingsRate,
-            largestCategory,
+            savingsRateLabel,
+            largestCategory: spendingBreakdown[0],
         });
 
         return {
@@ -170,7 +169,7 @@ export default function ReportsPage() {
             expensesInCents,
             savingsAllocationInCents,
             remainingCashInCents,
-            savingsRate,
+            savingsRateLabel,
             spendingBreakdown,
             goalTargetTotal,
             goalCurrentTotal,
@@ -185,28 +184,17 @@ export default function ReportsPage() {
                 <section>
                     <PageHeader />
 
-                    {isLoading && (
-                        <div className="rounded-3xl bg-white p-6 shadow-sm">
-                            <p className="text-gray-600">Loading reports...</p>
-                        </div>
-                    )}
+                    {isLoading && <LoadingCard />}
 
                     {!isLoading && errorMessage && (
-                        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
-                            {errorMessage}
-                        </div>
+                        <ErrorCard message={errorMessage} />
                     )}
 
                     {!isLoading && !errorMessage && (
                         <>
                             <ReportSummary report={report} />
-
-                            <SpendingBreakdown
-                                spendingBreakdown={report.spendingBreakdown}
-                            />
-
+                            <SpendingBreakdown spendingBreakdown={report.spendingBreakdown} />
                             <GoalsOverview report={report} />
-
                             <Insights insights={report.insights} />
                         </>
                     )}
@@ -226,24 +214,29 @@ function PageHeader() {
             <h1 className="mt-2 text-4xl font-bold">Reports</h1>
 
             <p className="mt-3 max-w-2xl text-gray-600">
-                View summaries of your income, expenses, savings, and spending
-                patterns.
+                View summaries of your income, expenses, savings, and spending patterns.
             </p>
         </div>
     );
 }
 
-function ReportSummary({
-                           report,
-                       }: {
-    report: {
-        monthlyIncomeInCents: number;
-        expensesInCents: number;
-        savingsAllocationInCents: number;
-        remainingCashInCents: number;
-        savingsRate: number;
-    };
-}) {
+function LoadingCard() {
+    return (
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <p className="text-gray-600">Loading reports...</p>
+        </div>
+    );
+}
+
+function ErrorCard({ message }: { message: string }) {
+    return (
+        <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700">
+            {message}
+        </div>
+    );
+}
+
+function ReportSummary({ report }: { report: ReportData }) {
     const summary = [
         {
             label: "Income",
@@ -257,6 +250,7 @@ function ReportSummary({
             label: "Savings",
             value: formatCents(report.savingsAllocationInCents),
             highlight: true,
+            helperText: `${report.savingsRateLabel} of income`,
         },
         {
             label: "Remaining Cash",
@@ -279,9 +273,9 @@ function ReportSummary({
                         {item.value}
                     </h2>
 
-                    {item.label === "Savings" && (
+                    {item.helperText && (
                         <p className="mt-2 text-sm text-gray-500">
-                            {report.savingsRate}% of income
+                            {item.helperText}
                         </p>
                     )}
                 </div>
@@ -301,15 +295,13 @@ function SpendingBreakdown({
                 <h2 className="text-2xl font-bold">Spending Breakdown</h2>
 
                 <p className="mt-1 text-gray-600">
-                    See which categories take up the largest part of your monthly
-                    spending.
+                    See which categories take up the largest part of your monthly spending.
                 </p>
             </div>
 
             {spendingBreakdown.length === 0 ? (
                 <p className="text-gray-500">
-                    Add budget items or recurring expenses to see your spending
-                    breakdown.
+                    Add budget items or recurring expenses to see your spending breakdown.
                 </p>
             ) : (
                 <div className="space-y-4">
@@ -317,18 +309,16 @@ function SpendingBreakdown({
                         <div key={category.name}>
                             <div className="mb-2 flex items-center justify-between text-sm">
                                 <span className="font-medium">{category.name}</span>
+
                                 <span className="text-gray-500">
-                                    {formatCents(category.amountInCents)} •{" "}
-                                    {category.percentage}%
+                                    {formatCents(category.amountInCents)} • {category.percentage}%
                                 </span>
                             </div>
 
                             <div className="h-3 rounded-full bg-emerald-100">
                                 <div
                                     className="h-3 rounded-full bg-emerald-600"
-                                    style={{
-                                        width: `${category.percentage}%`,
-                                    }}
+                                    style={{ width: `${category.percentage}%` }}
                                 />
                             </div>
                         </div>
@@ -339,15 +329,7 @@ function SpendingBreakdown({
     );
 }
 
-function GoalsOverview({
-                           report,
-                       }: {
-    report: {
-        goalTargetTotal: number;
-        goalCurrentTotal: number;
-        goalGap: number;
-    };
-}) {
+function GoalsOverview({ report }: { report: ReportData }) {
     return (
         <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="text-2xl font-bold">Goals Overview</h2>
@@ -402,24 +384,24 @@ function buildInsights({
                            expensesInCents,
                            savingsAllocationInCents,
                            remainingCashInCents,
-                           savingsRate,
+                           savingsRateLabel,
                            largestCategory,
                        }: {
     monthlyIncomeInCents: number;
     expensesInCents: number;
     savingsAllocationInCents: number;
     remainingCashInCents: number;
-    savingsRate: number;
+    savingsRateLabel: string;
     largestCategory?: CategoryBreakdown;
 }) {
-    const insights: string[] = [];
-
     if (monthlyIncomeInCents <= 0) {
         return [
             "Add your monthly income to unlock more useful reports.",
             "Add budget items and recurring expenses to see where your money goes.",
         ];
     }
+
+    const insights: string[] = [];
 
     if (largestCategory) {
         insights.push(
@@ -430,7 +412,7 @@ function buildInsights({
     }
 
     insights.push(
-        `You are currently saving ${savingsRate}% of your monthly income.`
+        `You are currently saving ${savingsRateLabel} of your monthly income.`
     );
 
     if (remainingCashInCents >= 0) {
@@ -448,18 +430,44 @@ function buildInsights({
     }
 
     if (expensesInCents > monthlyIncomeInCents * 0.7) {
-        insights.push(
-            "Your expenses are taking up more than 70% of your income."
-        );
+        insights.push("Your expenses are taking up more than 70% of your income.");
     }
 
     if (savingsAllocationInCents === 0) {
-        insights.push(
-            "You have not allocated money toward savings yet."
-        );
+        insights.push("You have not allocated money toward savings yet.");
     }
 
     return insights;
+}
+
+function addToCategoryTotal(
+    categoryTotals: Map<string, number>,
+    category: string,
+    amountInCents: number
+) {
+    const categoryName = category.trim() || "Uncategorised";
+
+    categoryTotals.set(
+        categoryName,
+        (categoryTotals.get(categoryName) ?? 0) + amountInCents
+    );
+}
+
+function formatSavingsRate(
+    savingsAllocationInCents: number,
+    monthlyIncomeInCents: number
+) {
+    if (monthlyIncomeInCents <= 0) {
+        return "0%";
+    }
+
+    const percentage = (savingsAllocationInCents / monthlyIncomeInCents) * 100;
+
+    if (percentage > 0 && percentage < 1) {
+        return "<1%";
+    }
+
+    return `${Math.round(percentage)}%`;
 }
 
 function formatCents(amountInCents: number) {

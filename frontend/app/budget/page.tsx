@@ -2,10 +2,8 @@
 
 import AppShell from "@/components/AppShell";
 import AuthGuard from "@/components/AuthGuard";
-import { useRouter } from "next/navigation";
+import { authenticatedFetch } from "@/lib/authenticatedFetch";
 import { useEffect, useMemo, useState } from "react";
-
-const API_BASE_URL = "https://moneymap-backend-l90f.onrender.com";
 
 type BudgetItemType = "EXPENSE" | "SAVING" | "DEBT" | "INCOME";
 
@@ -31,15 +29,23 @@ type BudgetResponse = {
     goal?: BudgetGoal | null;
 };
 
-export default function BudgetPage() {
-    const router = useRouter();
+type RecurringExpense = {
+    id: string;
+    name: string;
+    category: string;
+    amountInCents: number;
+    frequency: string;
+    nextPaymentDate: string;
+};
 
+export default function BudgetPage() {
     const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
     const [isItemModalOpen, setIsItemModalOpen] = useState(false);
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
     const [monthlyIncomeInCents, setMonthlyIncomeInCents] = useState(0);
     const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
+    const [recurringExpenses, setRecurringExpenses] = useState<RecurringExpense[]>([]);
     const [goal, setGoal] = useState<BudgetGoal | null>(null);
 
     const [isLoading, setIsLoading] = useState(true);
@@ -48,41 +54,29 @@ export default function BudgetPage() {
     const [editingBudgetItemId, setEditingBudgetItemId] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        loadBudgetPageData();
+    }, []);
 
-        if (!token) {
-            localStorage.removeItem("token");
-            localStorage.removeItem("userId");
-            router.push("/login");
-            return;
-        }
-
-        loadBudget();
-    }, [router]);
-
-    async function loadBudget() {
+    async function loadBudgetPageData() {
         try {
             setIsLoading(true);
             setErrorMessage("");
 
-            const response = await authenticatedFetch("/api/v1/budget");
+            const [budgetResponse, recurringResponse] = await Promise.all([
+                authenticatedFetch("/api/v1/budget"),
+                authenticatedFetch("/api/v1/recurring-expenses"),
+            ]);
 
-            if (response.status === 401 || response.status === 403) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("userId");
-                router.push("/login");
+            if (!budgetResponse.ok || !recurringResponse.ok) {
+                setErrorMessage("Could not load budget data.");
                 return;
             }
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Budget request failed:", response.status, errorText);
-                setErrorMessage("Could not load budget.");
-                return;
-            }
+            const budget: BudgetResponse = await budgetResponse.json();
+            const recurring: RecurringExpense[] = await recurringResponse.json();
 
-            const budget: BudgetResponse = await response.json();
             updateBudgetState(budget);
+            setRecurringExpenses(recurring);
         } catch (error) {
             console.error("Budget loading failed:", error);
             setErrorMessage("Could not connect to the server.");
@@ -97,18 +91,26 @@ export default function BudgetPage() {
         setGoal(budget.goal ?? null);
     }
 
-    const plannedExpensesInCents = useMemo(() => {
+    const budgetItemsTotalInCents = useMemo(() => {
         return budgetItems
-            .filter(
-                (item) =>
-                    item.type === "EXPENSE" ||
-                    item.type === "SAVING" ||
-                    item.type === "DEBT"
-            )
+            .filter((item) => item.type === "EXPENSE" || item.type === "SAVING" || item.type === "DEBT")
             .reduce((total, item) => total + item.amountInCents, 0);
     }, [budgetItems]);
 
-    const remainingInCents = monthlyIncomeInCents - plannedExpensesInCents;
+    const recurringExpensesTotalInCents = useMemo(() => {
+        return recurringExpenses.reduce(
+            (total, expense) => total + expense.amountInCents,
+            0
+        );
+    }, [recurringExpenses]);
+
+    const savingsContributionInCents = goal?.monthlyContributionInCents ?? 0;
+
+    const plannedExpensesInCents =
+        budgetItemsTotalInCents + recurringExpensesTotalInCents;
+
+    const remainingInCents =
+        monthlyIncomeInCents - plannedExpensesInCents - savingsContributionInCents;
 
     async function handleUpdateIncome(amountInCents: number) {
         try {
@@ -117,24 +119,16 @@ export default function BudgetPage() {
 
             const response = await authenticatedFetch("/api/v1/budget/income", {
                 method: "PUT",
-                body: JSON.stringify({
-                    monthlyIncomeInCents: amountInCents,
-                }),
+                body: JSON.stringify({ monthlyIncomeInCents: amountInCents }),
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Income update failed:", response.status, errorText);
                 setErrorMessage("Could not update income.");
                 return;
             }
 
-            const updatedBudget: BudgetResponse = await response.json();
-            updateBudgetState(updatedBudget);
+            updateBudgetState(await response.json());
             setIsIncomeModalOpen(false);
-        } catch (error) {
-            console.error("Income update failed:", error);
-            setErrorMessage("Could not connect to the server.");
         } finally {
             setIsSaving(false);
         }
@@ -153,30 +147,18 @@ export default function BudgetPage() {
                     : "/api/v1/budget/items",
                 {
                     method: isEditing ? "PUT" : "POST",
-                    body: JSON.stringify({
-                        name: item.name,
-                        category: item.category,
-                        type: item.type,
-                        amountInCents: item.amountInCents,
-                    }),
+                    body: JSON.stringify(item),
                 }
             );
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Save item failed:", response.status, errorText);
-                setErrorMessage(`Save item failed (${response.status}): ${errorText}`);
+                setErrorMessage("Could not save budget item.");
                 return;
             }
 
-            const updatedBudget: BudgetResponse = await response.json();
-            updateBudgetState(updatedBudget);
-
+            updateBudgetState(await response.json());
             setEditingBudgetItemId(null);
             setIsItemModalOpen(false);
-        } catch (error) {
-            console.error("Save item failed:", error);
-            setErrorMessage("Could not connect to the server.");
         } finally {
             setIsSaving(false);
         }
@@ -192,17 +174,11 @@ export default function BudgetPage() {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Delete item failed:", response.status, errorText);
                 setErrorMessage("Could not delete budget item.");
                 return;
             }
 
-            const updatedBudget: BudgetResponse = await response.json();
-            updateBudgetState(updatedBudget);
-        } catch (error) {
-            console.error("Delete item failed:", error);
-            setErrorMessage("Could not connect to the server.");
+            updateBudgetState(await response.json());
         } finally {
             setIsSaving(false);
         }
@@ -224,36 +200,15 @@ export default function BudgetPage() {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Set goal failed:", response.status, errorText);
                 setErrorMessage("Could not save budget goal.");
                 return;
             }
 
-            const updatedBudget: BudgetResponse = await response.json();
-            updateBudgetState(updatedBudget);
+            updateBudgetState(await response.json());
             setIsGoalModalOpen(false);
-        } catch (error) {
-            console.error("Set goal failed:", error);
-            setErrorMessage("Could not connect to the server.");
         } finally {
             setIsSaving(false);
         }
-    }
-
-    function handleOpenAddItemModal() {
-        setEditingBudgetItemId(null);
-        setIsItemModalOpen(true);
-    }
-
-    function handleEditBudgetItem(item: BudgetItem) {
-        setEditingBudgetItemId(item.id);
-        setIsItemModalOpen(true);
-    }
-
-    function handleCloseItemModal() {
-        setEditingBudgetItemId(null);
-        setIsItemModalOpen(false);
     }
 
     const editingBudgetItem = editingBudgetItemId
@@ -262,9 +217,11 @@ export default function BudgetPage() {
 
     if (isLoading) {
         return (
-            <AppShell>
-                <p>Loading budget...</p>
-            </AppShell>
+            <AuthGuard>
+                <AppShell>
+                    <p>Loading budget...</p>
+                </AppShell>
+            </AuthGuard>
         );
     }
 
@@ -282,24 +239,36 @@ export default function BudgetPage() {
 
                     <SummaryCards
                         monthlyIncomeInCents={monthlyIncomeInCents}
-                        plannedExpensesInCents={plannedExpensesInCents}
+                        budgetItemsTotalInCents={budgetItemsTotalInCents}
+                        recurringExpensesTotalInCents={recurringExpensesTotalInCents}
+                        savingsContributionInCents={savingsContributionInCents}
                         remainingInCents={remainingInCents}
                         onEditIncome={() => setIsIncomeModalOpen(true)}
                     />
 
+                    {remainingInCents < 0 && (
+                        <p className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            You are over budget by {formatCurrency(Math.abs(remainingInCents))}.
+                            Your planned budget, recurring expenses, and savings contribution are higher than your income.
+                        </p>
+                    )}
+
                     {goal ? (
-                        <BudgetGoalCard
-                            goal={goal}
-                            onSetGoal={() => setIsGoalModalOpen(true)}
-                        />
+                        <BudgetGoalCard goal={goal} onSetGoal={() => setIsGoalModalOpen(true)} />
                     ) : (
                         <EmptyGoalCard onSetGoal={() => setIsGoalModalOpen(true)} />
                     )}
 
                     <BudgetItems
                         budgetItems={budgetItems}
-                        onAddItem={handleOpenAddItemModal}
-                        onEditItem={handleEditBudgetItem}
+                        onAddItem={() => {
+                            setEditingBudgetItemId(null);
+                            setIsItemModalOpen(true);
+                        }}
+                        onEditItem={(item) => {
+                            setEditingBudgetItemId(item.id);
+                            setIsItemModalOpen(true);
+                        }}
                         onDeleteItem={handleDeleteBudgetItem}
                     />
 
@@ -316,7 +285,10 @@ export default function BudgetPage() {
                         <BudgetItemModal
                             isSaving={isSaving}
                             initialItem={editingBudgetItem}
-                            onClose={handleCloseItemModal}
+                            onClose={() => {
+                                setEditingBudgetItemId(null);
+                                setIsItemModalOpen(false);
+                            }}
                             onSaveItem={handleSaveItem}
                         />
                     )}
@@ -346,9 +318,7 @@ export default function BudgetPage() {
 function PageHeader() {
     return (
         <div className="mb-8">
-            <p className="text-sm font-medium text-emerald-700">
-                MoneyMap Dashboard
-            </p>
+            <p className="text-sm font-medium text-emerald-700">MoneyMap Dashboard</p>
             <h1 className="mt-2 text-4xl font-bold">Your Budget</h1>
             <p className="mt-3 max-w-2xl text-gray-600">
                 Plan your monthly income, expenses, savings, and goals in one place.
@@ -359,44 +329,44 @@ function PageHeader() {
 
 function SummaryCards({
                           monthlyIncomeInCents,
-                          plannedExpensesInCents,
+                          budgetItemsTotalInCents,
+                          recurringExpensesTotalInCents,
+                          savingsContributionInCents,
                           remainingInCents,
                           onEditIncome,
                       }: {
     monthlyIncomeInCents: number;
-    plannedExpensesInCents: number;
+    budgetItemsTotalInCents: number;
+    recurringExpensesTotalInCents: number;
+    savingsContributionInCents: number;
     remainingInCents: number;
     onEditIncome: () => void;
 }) {
     return (
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-3xl bg-white p-6 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <p className="text-sm text-gray-500">Monthly Income</p>
-                        <h2 className="mt-2 text-3xl font-bold">
-                            {formatCurrency(monthlyIncomeInCents)}
-                        </h2>
-                    </div>
+                <p className="text-sm text-gray-500">Monthly Income</p>
 
-                    <button
-                        onClick={onEditIncome}
-                        className="rounded-lg border border-emerald-600 px-3 py-1 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
-                    >
-                        Edit
-                    </button>
-                </div>
+                <h2 className="mt-2 text-3xl font-bold">
+                    {formatCurrency(monthlyIncomeInCents)}
+                </h2>
+
+                <button
+                    onClick={onEditIncome}
+                    className="mt-4 rounded-lg border border-emerald-600 px-3 py-1 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                >
+                    Edit
+                </button>
             </div>
 
-            <SummaryCard
-                label="Planned Expenses"
-                value={formatCurrency(plannedExpensesInCents)}
-            />
-
+            <SummaryCard label="Budget Items" value={formatCurrency(budgetItemsTotalInCents)} />
+            <SummaryCard label="Recurring" value={formatCurrency(recurringExpensesTotalInCents)} />
+            <SummaryCard label="Savings" value={formatCurrency(savingsContributionInCents)} />
             <SummaryCard
                 label="Remaining"
                 value={formatCurrency(remainingInCents)}
-                highlight
+                highlight={remainingInCents >= 0}
+                danger={remainingInCents < 0}
             />
         </div>
     );
@@ -406,15 +376,21 @@ function SummaryCard({
                          label,
                          value,
                          highlight = false,
+                         danger = false,
                      }: {
     label: string;
     value: string;
     highlight?: boolean;
+    danger?: boolean;
 }) {
     return (
         <div className="rounded-3xl bg-white p-6 shadow-sm">
             <p className="text-sm text-gray-500">{label}</p>
-            <h2 className={`mt-2 text-3xl font-bold ${highlight ? "text-emerald-600" : ""}`}>
+            <h2
+                className={`mt-2 text-3xl font-bold ${
+                    highlight ? "text-emerald-600" : ""
+                } ${danger ? "text-red-600" : ""}`}
+            >
                 {value}
             </h2>
         </div>
@@ -440,20 +416,12 @@ function EmptyGoalCard({ onSetGoal }: { onSetGoal: () => void }) {
     );
 }
 
-function BudgetGoalCard({
-                            goal,
-                            onSetGoal,
-                        }: {
-    goal: BudgetGoal;
-    onSetGoal: () => void;
-}) {
+function BudgetGoalCard({ goal, onSetGoal }: { goal: BudgetGoal; onSetGoal: () => void }) {
     const progressPercentage =
         goal.targetAmountInCents > 0
             ? Math.min(
                 100,
-                Math.round(
-                    (goal.currentAmountInCents / goal.targetAmountInCents) * 100
-                )
+                Math.round((goal.currentAmountInCents / goal.targetAmountInCents) * 100)
             )
             : 0;
 
@@ -466,8 +434,7 @@ function BudgetGoalCard({
                         {goal.name} to {formatCurrency(goal.targetAmountInCents)}
                     </h2>
                     <p className="mt-2 text-gray-600">
-                        You are currently contributing{" "}
-                        {formatCurrency(goal.monthlyContributionInCents)}.
+                        You are currently contributing {formatCurrency(goal.monthlyContributionInCents)}.
                     </p>
                 </div>
 
@@ -542,9 +509,7 @@ function BudgetItems({
                             </div>
 
                             <div className="flex items-center gap-4">
-                                <p className="font-bold">
-                                    {formatCurrency(item.amountInCents)}
-                                </p>
+                                <p className="font-bold">{formatCurrency(item.amountInCents)}</p>
 
                                 <button
                                     onClick={() => onEditItem(item)}
@@ -568,6 +533,8 @@ function BudgetItems({
     );
 }
 
+/* keep your existing modal components below this line unchanged */
+
 function EditIncomeModal({
                              initialAmountInCents,
                              isSaving,
@@ -583,30 +550,15 @@ function EditIncomeModal({
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-
         if (!amount.trim()) return;
-
         onSave(randToCents(amount));
     }
 
     return (
-        <Modal
-            title="Edit Monthly Income"
-            subtitle="Set your expected monthly income."
-            onClose={onClose}
-        >
+        <Modal title="Edit Monthly Income" subtitle="Set your expected monthly income." onClose={onClose}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <ModalInput
-                    label="Monthly income"
-                    value={amount}
-                    onChange={setAmount}
-                    placeholder="e.g. 48000"
-                />
-
-                <SubmitButton
-                    label={isSaving ? "Saving..." : "Save Income"}
-                    disabled={isSaving}
-                />
+                <ModalInput label="Monthly income" value={amount} onChange={setAmount} placeholder="e.g. 48000" />
+                <SubmitButton label={isSaving ? "Saving..." : "Save Income"} disabled={isSaving} />
             </form>
         </Modal>
     );
@@ -626,17 +578,12 @@ function BudgetItemModal({
     const isEditing = Boolean(initialItem);
 
     const [name, setName] = useState(initialItem?.name ?? "");
-    const [amount, setAmount] = useState(
-        initialItem ? centsToRandInput(initialItem.amountInCents) : ""
-    );
+    const [amount, setAmount] = useState(initialItem ? centsToRandInput(initialItem.amountInCents) : "");
     const [category, setCategory] = useState(initialItem?.category ?? "");
-    const [type, setType] = useState<BudgetItemType>(
-        initialItem?.type ?? "EXPENSE"
-    );
+    const [type, setType] = useState<BudgetItemType>(initialItem?.type ?? "EXPENSE");
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-
         if (!name.trim() || !amount.trim() || !category.trim()) return;
 
         onSaveItem({
@@ -650,45 +597,19 @@ function BudgetItemModal({
     return (
         <Modal
             title={isEditing ? "Edit Budget Item" : "Add Budget Item"}
-            subtitle={
-                isEditing
-                    ? "Update this planned budget item."
-                    : "Add a planned expense, saving, debt, or income item."
-            }
+            subtitle={isEditing ? "Update this planned budget item." : "Add a planned expense, saving, debt, or income item."}
             onClose={onClose}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
-                <ModalInput
-                    label="Name"
-                    value={name}
-                    onChange={setName}
-                    placeholder="e.g. Internet"
-                />
-
-                <ModalInput
-                    label="Amount"
-                    value={amount}
-                    onChange={setAmount}
-                    placeholder="e.g. 899"
-                />
-
-                <ModalInput
-                    label="Category"
-                    value={category}
-                    onChange={setCategory}
-                    placeholder="e.g. Bills"
-                />
+                <ModalInput label="Name" value={name} onChange={setName} placeholder="e.g. Internet" />
+                <ModalInput label="Amount" value={amount} onChange={setAmount} placeholder="e.g. 899" />
+                <ModalInput label="Category" value={category} onChange={setCategory} placeholder="e.g. Bills" />
 
                 <div>
-                    <label className="text-sm font-medium text-gray-700">
-                        Type
-                    </label>
-
+                    <label className="text-sm font-medium text-gray-700">Type</label>
                     <select
                         value={type}
-                        onChange={(event) =>
-                            setType(event.target.value as BudgetItemType)
-                        }
+                        onChange={(event) => setType(event.target.value as BudgetItemType)}
                         className="mt-2 w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-200"
                     >
                         <option value="EXPENSE">Expense</option>
@@ -698,16 +619,7 @@ function BudgetItemModal({
                     </select>
                 </div>
 
-                <SubmitButton
-                    label={
-                        isSaving
-                            ? "Saving..."
-                            : isEditing
-                                ? "Save Changes"
-                                : "Save Item"
-                    }
-                    disabled={isSaving}
-                />
+                <SubmitButton label={isSaving ? "Saving..." : isEditing ? "Save Changes" : "Save Item"} disabled={isSaving} />
             </form>
         </Modal>
     );
@@ -725,22 +637,14 @@ function SetGoalModal({
     onSetGoal: (goal: BudgetGoal) => void;
 }) {
     const [goalName, setGoalName] = useState(initialGoal.name);
-    const [targetAmount, setTargetAmount] = useState(
-        centsToRandInput(initialGoal.targetAmountInCents)
-    );
-    const [currentAmount, setCurrentAmount] = useState(
-        centsToRandInput(initialGoal.currentAmountInCents)
-    );
-    const [monthlyContribution, setMonthlyContribution] = useState(
-        centsToRandInput(initialGoal.monthlyContributionInCents)
-    );
+    const [targetAmount, setTargetAmount] = useState(centsToRandInput(initialGoal.targetAmountInCents));
+    const [currentAmount, setCurrentAmount] = useState(centsToRandInput(initialGoal.currentAmountInCents));
+    const [monthlyContribution, setMonthlyContribution] = useState(centsToRandInput(initialGoal.monthlyContributionInCents));
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
-        if (!goalName.trim() || !targetAmount.trim() || !monthlyContribution.trim()) {
-            return;
-        }
+        if (!goalName.trim() || !targetAmount.trim() || !monthlyContribution.trim()) return;
 
         onSetGoal({
             id: initialGoal.id,
@@ -752,44 +656,13 @@ function SetGoalModal({
     }
 
     return (
-        <Modal
-            title="Set Budget Goal"
-            subtitle="Define what you want your budget to work toward."
-            onClose={onClose}
-        >
+        <Modal title="Set Budget Goal" subtitle="Define what you want your budget to work toward." onClose={onClose}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <ModalInput
-                    label="Goal name"
-                    value={goalName}
-                    onChange={setGoalName}
-                    placeholder="e.g. Emergency Fund"
-                />
-
-                <ModalInput
-                    label="Target amount"
-                    value={targetAmount}
-                    onChange={setTargetAmount}
-                    placeholder="e.g. 5000"
-                />
-
-                <ModalInput
-                    label="Current amount"
-                    value={currentAmount}
-                    onChange={setCurrentAmount}
-                    placeholder="e.g. 2000"
-                />
-
-                <ModalInput
-                    label="Monthly contribution"
-                    value={monthlyContribution}
-                    onChange={setMonthlyContribution}
-                    placeholder="e.g. 1000"
-                />
-
-                <SubmitButton
-                    label={isSaving ? "Saving..." : "Save Goal"}
-                    disabled={isSaving}
-                />
+                <ModalInput label="Goal name" value={goalName} onChange={setGoalName} placeholder="e.g. Emergency Fund" />
+                <ModalInput label="Target amount" value={targetAmount} onChange={setTargetAmount} placeholder="e.g. 5000" />
+                <ModalInput label="Current amount" value={currentAmount} onChange={setCurrentAmount} placeholder="e.g. 2000" />
+                <ModalInput label="Monthly contribution" value={monthlyContribution} onChange={setMonthlyContribution} placeholder="e.g. 1000" />
+                <SubmitButton label={isSaving ? "Saving..." : "Save Goal"} disabled={isSaving} />
             </form>
         </Modal>
     );
@@ -815,10 +688,7 @@ function Modal({
                         <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
                     </div>
 
-                    <button
-                        onClick={onClose}
-                        className="text-2xl font-semibold text-gray-500 hover:text-gray-800"
-                    >
+                    <button onClick={onClose} className="text-2xl font-semibold text-gray-500 hover:text-gray-800">
                         ×
                     </button>
                 </div>
@@ -843,7 +713,6 @@ function ModalInput({
     return (
         <div>
             <label className="text-sm font-medium text-gray-700">{label}</label>
-
             <input
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
@@ -854,43 +723,18 @@ function ModalInput({
     );
 }
 
-function SubmitButton({
-                          label,
-                          disabled = false,
-                      }: {
-    label: string;
-    disabled?: boolean;
-}) {
+function SubmitButton({ label, disabled = false }: { label: string; disabled?: boolean }) {
     return (
         <button
             type="submit"
             disabled={disabled}
             className={`w-full rounded-xl px-5 py-3 font-semibold text-white transition ${
-                disabled
-                    ? "cursor-not-allowed bg-gray-400"
-                    : "bg-emerald-600 hover:bg-emerald-700"
+                disabled ? "cursor-not-allowed bg-gray-400" : "bg-emerald-600 hover:bg-emerald-700"
             }`}
         >
             {label}
         </button>
     );
-}
-
-function authenticatedFetch(path: string, options: RequestInit = {}) {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-        throw new Error("Missing auth token");
-    }
-
-    return fetch(`${API_BASE_URL}${path}`, {
-        ...options,
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-            ...options.headers,
-        },
-    });
 }
 
 function randToCents(value: string) {
