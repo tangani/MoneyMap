@@ -22,7 +22,7 @@ MoneyMap aims to provide a single platform where users can:
 * Build realistic monthly budgets
 * Monitor recurring payments
 * Set and achieve savings goals
-* Track debt repayment progress
+* Manage account preferences
 * Understand spending habits
 * Improve financial decision-making
 
@@ -32,9 +32,9 @@ The long-term goal is to create a modern, accessible financial management platfo
 
 # 💡 Financial Model
 
-MoneyMap is built around four core financial pillars:
+MoneyMap is built around four core financial pillars.
 
-### Budget
+## Budget
 
 Flexible monthly spending allocations such as:
 
@@ -44,7 +44,15 @@ Flexible monthly spending allocations such as:
 * Utilities
 * Personal spending
 
-### Recurring Expenses
+Budgets consist of:
+
+* Monthly income
+* Budget items
+* Budget goals
+
+---
+
+## Recurring Expenses
 
 Fixed monthly commitments such as:
 
@@ -54,7 +62,16 @@ Fixed monthly commitments such as:
 * Streaming services
 * Mobile contracts
 
-### Goals
+Recurring expenses include:
+
+* Category
+* Frequency
+* Amount
+* Next payment date
+
+---
+
+## Goals
 
 Dedicated savings objectives such as:
 
@@ -68,9 +85,11 @@ Each goal contains:
 
 * Target amount
 * Current amount
-* Monthly contribution
+* Progress tracking
 
-### Reports
+---
+
+## Reports
 
 Reports aggregate information from Budgets, Goals, and Recurring Expenses to provide:
 
@@ -93,18 +112,22 @@ MoneyMap currently supports:
 * JWT authentication
 * Protected application routes
 * Budget management
-* Budget goals
+* Budget goal management
+* Savings goals
 * Recurring expense tracking
+* User settings management
+* Password changes
+* Account deletion requests
 * PostgreSQL persistence
-* Frontend and backend production deployments
+* Production deployments
 
-The application is now operating as a full-stack web application with authenticated users, persistent data storage, and production hosting.
+The application is now operating as a fully authenticated full-stack platform with persistent storage, production hosting, and complete CRUD functionality across all major financial modules.
 
 ---
 
-## ✅ Completed
+# ✅ Completed
 
-### Frontend
+## Frontend
 
 * Landing page
 * Signup page
@@ -113,100 +136,77 @@ The application is now operating as a full-stack web application with authentica
 * Route protection
 * Budget dashboard
 * Budget backend integration
-* Goal management
-* Recurring expense management
-* Reports page
-* Settings page
+* Budget item CRUD
+* Budget goal CRUD
+* Savings goals CRUD
+* Recurring expense CRUD
+* Settings backend integration
+* Password management UI
+* Account deletion requests
+* Reports page scaffold
 * Responsive navigation
 * Mobile bottom navigation
 
-### Backend
+---
 
-* Micronaut project setup
-* Docker support
-* PostgreSQL configuration
-* Flyway migrations
+## Backend
+
+### Authentication
+
 * User signup API
 * User login API
-* Password hashing
+* Password hashing (BCrypt)
 * JWT generation
-* JWT-protected APIs
-* Budget APIs
-* Budget persistence
-* Budget item persistence
-* Budget goal persistence
-* Recurring expense APIs
-* Recurring expense persistence
+* JWT validation
+* Protected APIs
+
+### Budget Management
+
+* Monthly income management
+* Budget item CRUD
+* Budget goal CRUD
+* Budget ownership validation
+
+### Goals
+
+* Goal CRUD
+* Goal progress calculation
+
+### Recurring Expenses
+
+* Recurring expense CRUD
+* Ownership validation
+
+### Settings
+
+* Profile management
+* Email updates
+* Currency preferences
+* Monthly budget cycle preferences
+* Notification preferences
+* Password changes
+* Account deletion requests (soft delete)
+
+### Infrastructure
+
+* Micronaut
+* PostgreSQL
+* Flyway migrations
+* Docker support
 * Request validation
 * API serialization
 
-### Infrastructure
+---
+
+## Infrastructure
 
 * GitHub repositories
 * Docker development environment
 * PostgreSQL containerized development environment
-* Backend deployment (Render)
-* Frontend deployment (Vercel)
+* Backend deployment on Render
+* Frontend deployment on Vercel
 * Environment variable configuration
-
----
-
-## 🚧 In Progress
-
-### Budget & Goals
-
-* Goal progress calculations
-* Goal contribution tracking
-* Monthly savings allocation model
-* Validation improvements
-
-### Reporting
-
-* Dynamic reporting engine
-* Pie chart visualizations
-* Cash flow summaries
-* Financial health metrics
-
-### Financial Tracking
-
-* Transaction management
-* Expense categorization
-* Spending history
-
----
-
-## 📋 Planned
-
-### Reports & Analytics
-
-* Goal allocation pie charts
-* Recurring expense category pie charts
-* Monthly spending trends
-* Income versus commitments analysis
-* Emergency fund progress reporting
-* Savings performance tracking
-
-### Core Finance Features
-
-* Transaction tracking
-* Debt management
-* Financial health scoring
-* Monthly summaries
-
-### Platform Expansion
-
-* Android application
-* iOS application
-* Push notifications
-* Multi-currency support
-
-### Advanced Features
-
-* Bank integrations
-* Open Banking APIs
-* AI-powered budgeting assistance
-* Financial forecasting
-* Personalized recommendations
+* JWT secret management
 
 ---
 
@@ -230,22 +230,32 @@ The application is now operating as a full-stack web application with authentica
 └─────────────────────┘
 ```
 
-### Long-Term Architecture
+---
+
+## Current Domain Model
 
 ```text
-                    ┌─────────────┐
-                    │ Android App │
-                    └──────┬──────┘
-                           │
+User
+├── Profile
+├── Preferences
+├── Authentication
+└── Settings
 
-┌─────────────┐            ▼            ┌─────────────┐
-│   Web App   │ ─────► Backend APIs ◄── │   iOS App   │
-└─────────────┘                          └─────────────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │ PostgreSQL  │
-                    └─────────────┘
+Budget
+├── Monthly Income
+├── Budget Items
+└── Budget Goal
+
+Goal
+├── Target Amount
+├── Current Amount
+└── Progress
+
+Recurring Expense
+├── Amount
+├── Category
+├── Frequency
+└── Next Payment Date
 ```
 
 ---
@@ -265,7 +275,7 @@ Monthly Income
 = Available Cash
 ```
 
-This approach provides a more accurate view of a user's financial position than traditional budgeting alone.
+This provides a clearer view of financial health than budgeting alone.
 
 ---
 
@@ -291,65 +301,70 @@ This approach provides a more accurate view of a user's financial position than 
 ## Phase 2 — Budget Management ✅
 
 * [x] Budget persistence
-* [x] Budget income management
-* [x] Budget item management
-* [x] Budget goal management
+* [x] Monthly income management
+* [x] Budget item CRUD
+* [x] Budget goal CRUD
 * [x] Database persistence
-* [x] Refresh-safe user data
-* [x] JWT-secured budget APIs
+* [x] JWT-secured APIs
 
 ---
 
-## Phase 3 — Recurring Expenses ✅
+## Phase 3 — Savings Goals ✅
+
+* [x] Goal persistence
+* [x] Goal CRUD APIs
+* [x] Goal frontend integration
+* [x] Goal progress calculations
+
+---
+
+## Phase 4 — Recurring Expenses ✅
 
 * [x] Recurring expense persistence
-* [x] Recurring expense APIs
+* [x] Recurring expense CRUD APIs
 * [x] Frontend integration
 * [x] JWT-secured endpoints
 * [x] PostgreSQL persistence
-* [x] Create recurring expenses
-* [x] View recurring expenses
-* [x] Edit recurring expenses
-* [x] Delete recurring expenses
 
 ---
 
-## Phase 4 — Budget Enhancements ✅
+## Phase 5 — Settings & Account Management ✅
 
-* [x] Edit budget items
-* [x] Delete budget items
-* [x] Edit budget goals
-* [x] Delete budget goals
-* [x] Edit recurring expenses
-* [x] Delete recurring expenses
+* [x] Profile management
+* [x] Email updates
+* [x] Currency preferences
+* [x] Budget cycle preferences
+* [x] Notification preferences
+* [x] Password changes
+* [x] Account deletion requests
+* [x] Soft-delete architecture
+* [x] User preference persistence
 
 ---
 
-## Phase 5 — Financial Tracking 🚧
+## Phase 6 — Insights & Reporting 🚧
 
-* [ ] Goal contribution tracking
-* [ ] Goal progress calculations
+* [ ] Cash flow overview
+* [ ] Spending by category
+* [ ] Goal allocation reporting
+* [ ] Upcoming payment reporting
+* [ ] Financial health dashboard
+* [ ] Pie chart visualizations
+* [ ] Savings analytics
+
+---
+
+## Phase 7 — Financial Tracking
+
 * [ ] Transaction management
 * [ ] Expense categorization
 * [ ] Spending history
 * [ ] Monthly summaries
+* [ ] Financial health scoring
 
 ---
 
-## Phase 6 — Insights & Reporting
-
-* [ ] Goal allocation pie charts
-* [ ] Recurring expense pie charts
-* [ ] Budget category analysis
-* [ ] Emergency fund reporting
-* [ ] Savings analytics
-* [ ] Cash flow dashboard
-* [ ] Financial forecasting
-* [ ] Export functionality
-
----
-
-## Phase 7 — Mobile Applications
+## Phase 8 — Mobile Applications
 
 * [ ] Android application (Kotlin)
 * [ ] iOS application (Swift)
@@ -358,13 +373,46 @@ This approach provides a more accurate view of a user's financial position than 
 
 ---
 
-## Phase 8 — Financial Platform
+## Phase 9 — Financial Intelligence
+
+* [ ] Financial forecasting
+* [ ] AI-powered budgeting assistance
+* [ ] Churn prediction
+* [ ] Dormancy prediction
+* [ ] Savings recommendations
+* [ ] Personalized financial insights
+* [ ] Subscription likelihood prediction
+
+---
+
+## Phase 10 — Financial Platform
 
 * [ ] Bank integrations
 * [ ] Open Banking APIs
-* [ ] AI-powered budgeting
-* [ ] Financial forecasting
-* [ ] Personalized recommendations
+* [ ] Multi-account management
+* [ ] Investment tracking
+* [ ] Debt management
+* [ ] Financial planning tools
+
+---
+
+# 🔐 Security
+
+MoneyMap currently implements:
+
+* BCrypt password hashing
+* JWT authentication
+* Protected APIs
+* User ownership validation
+* Route protection
+* Secure environment variables
+
+Future improvements include:
+
+* Password reset flow
+* Email verification
+* Multi-factor authentication
+* Session management
 
 ---
 
@@ -388,25 +436,25 @@ The goal is not merely to record financial information, but to help users:
 
 # 🌱 Project Philosophy
 
-MoneyMap is built around five principles:
+MoneyMap is built around five principles.
 
-### Simplicity
+## Simplicity
 
 Financial tools should be easy to use.
 
-### Transparency
+## Transparency
 
-Users should understand their financial position clearly.
+Users should clearly understand their financial position.
 
-### Privacy
+## Privacy
 
 Financial data should be handled responsibly.
 
-### Accessibility
+## Accessibility
 
 Good financial tools should be available to everyone.
 
-### Sustainability
+## Sustainability
 
 The focus is on building long-term financial habits rather than short-term fixes.
 
