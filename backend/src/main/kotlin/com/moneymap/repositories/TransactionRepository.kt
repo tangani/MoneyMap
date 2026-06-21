@@ -1,11 +1,12 @@
 package com.moneymap.repositories
 
 import com.moneymap.domain.transactions.Transaction
-import io.micronaut.data.annotation.Repository
+import io.micronaut.data.jdbc.annotation.JdbcRepository
+import io.micronaut.data.model.query.builder.sql.Dialect
 import io.micronaut.data.repository.CrudRepository
 import java.util.UUID
 
-@Repository
+@JdbcRepository(dialect = Dialect.POSTGRES)
 interface TransactionRepository : CrudRepository<Transaction, UUID> {
 
     fun findByUserIdOrderByTransactionDateDesc(
