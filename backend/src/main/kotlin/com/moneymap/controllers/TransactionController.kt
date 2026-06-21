@@ -4,9 +4,12 @@ import com.moneymap.models.CreateTransactionRequest
 import com.moneymap.models.TransactionResponse
 import com.moneymap.services.TransactionService
 import io.micronaut.http.annotation.*
+import io.micronaut.security.annotation.Secured
 import io.micronaut.security.authentication.Authentication
+import io.micronaut.security.rules.SecurityRule
 import java.util.UUID
 
+@Secured(SecurityRule.IS_AUTHENTICATED)
 @Controller("/api/v1/transactions")
 class TransactionController(
     private val transactionService: TransactionService

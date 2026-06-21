@@ -8,7 +8,7 @@ import java.util.UUID
 @Repository
 interface TransactionRepository : CrudRepository<Transaction, UUID> {
 
-    fun findByUserIdOrderByTransactionDateDescCreatedAtDesc(
+    fun findByUserIdOrderByTransactionDateDesc(
         userId: UUID
     ): List<Transaction>
 }

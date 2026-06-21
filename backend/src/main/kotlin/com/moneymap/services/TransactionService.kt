@@ -36,7 +36,7 @@ class TransactionService(
         limit: Int = 5
     ): List<TransactionResponse> {
         return transactionRepository
-            .findByUserIdOrderByTransactionDateDescCreatedAtDesc(userId)
+            .findByUserIdOrderByTransactionDateDesc(userId)
             .take(limit)
             .map { it.toResponse() }
     }
