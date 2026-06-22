@@ -16,6 +16,7 @@ data class BudgetItem(
     val name: String,
     val category: String,
     val amount: BigDecimal,
+    val type: String = "EXPENSE",
     val createdAt: LocalDateTime,
     val updatedAt: LocalDateTime,
 )

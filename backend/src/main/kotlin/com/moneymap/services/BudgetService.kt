@@ -46,7 +46,7 @@ class BudgetService(
                     name = item.name,
                     amountInCents = toCents(item.amount),
                     category = item.category,
-                    type = inferItemType(item.category),
+                    type = item.type,
                 )
             },
             goal = goal?.let {
@@ -133,6 +133,7 @@ class BudgetService(
                 name = request.name.trim(),
                 category = request.category.trim(),
                 amount = fromCents(request.amountInCents),
+                type = request.type,
                 createdAt = now,
                 updatedAt = now,
             )
@@ -185,6 +186,7 @@ class BudgetService(
                 name = request.name.trim(),
                 category = request.category.trim(),
                 amount = fromCents(request.amountInCents),
+                type = request.type,
                 updatedAt = now,
             )
         )
@@ -276,13 +278,5 @@ class BudgetService(
                 updatedAt = now,
             )
         )
-    }
-
-    private fun inferItemType(category: String): String {
-        return if (category.equals("Goals", ignoreCase = true)) {
-            "SAVING"
-        } else {
-            "EXPENSE"
-        }
     }
 }
